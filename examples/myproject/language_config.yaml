@@ -1,0 +1,14 @@
+corplang:
+  ai_runtime:
+    basic_kit:
+      sklearn_dataset:
+        texts:
+          - "hello"
+          - "goodbye"
+          - "how are you"
+        labels:
+          - "greeting"
+          - "farewell"
+          - "greeting"
+      sklearn_max_iter: 200
+      sklearn_model_path: "models/basic_kit_pipeline.joblib"

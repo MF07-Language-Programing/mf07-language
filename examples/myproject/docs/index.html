@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação - Api-Rest-Full</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #003d7a;
+            --success: #28a745;
+            --info: #17a2b8;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --dark: #1a1a1a;
+            --light: #f8f9fa;
+            --border: #dee2e6;
+            --text: #333;
+            --text-muted: #666;
+            --code-bg: #f4f4f4;
+            --javadoc-blue: #0066cc;
+            --javadoc-border: #bccff0;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: #fafbfc;
+            padding: 20px;
+        }
+        
+        .wrapper {
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 20px;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 4px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            max-height: 90vh;
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+            border: 1px solid #ddd;
+        }
+        
+        .sidebar h3 {
+            color: var(--primary);
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--javadoc-border);
+            font-weight: 600;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin: 8px 0;
+        }
+        
+        .sidebar a {
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.95em;
+            padding: 8px 12px;
+            display: block;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .sidebar a:hover {
+            background: var(--light);
+            color: var(--primary);
+            padding-left: 16px;
+        }
+        
+        .sidebar .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 8px;
+        }
+        
+        .main-content {
+            flex: 1;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 400;
+            letter-spacing: 0px;
+        }
+        
+        header p {
+            font-size: 1em;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+        
+        .breadcrumb {
+            background: var(--light);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            font-size: 0.95em;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+            color: var(--primary-dark);
+        }
+        
+        .breadcrumb span {
+            color: var(--text-muted);
+        }
+        
+        nav {
+            background: var(--light);
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        nav a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 16px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        nav a:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        main {
+            padding: 40px;
+        }
+        
+        section {
+            margin-bottom: 50px;
+        }
+        
+        h2 {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+        }
+        
+        h3 {
+            color: var(--primary-dark);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        h4 {
+            color: var(--text);
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .class-box, .interface-box, .function-box {
+            background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
+            border-left: 5px solid var(--primary);
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            transition: all 0.3s;
+        }
+        
+        .class-box:hover, .interface-box:hover, .function-box:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+        
+        .interface-box {
+            border-left-color: #666;
+        }
+        
+        .function-box {
+            border-left-color: #0066cc;
+        }
+        
+        .member-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .member-header h3 {
+            margin: 0;
+            margin-right: 10px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .hierarchy {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .hierarchy-item {
+            padding: 5px 0;
+            padding-left: 20px;
+        }
+        
+        .hierarchy-item.extends::before {
+            content: "└─ extends ";
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        .hierarchy-item.implements::before {
+            content: "└─ implements ";
+            color: var(--info);
+            font-weight: bold;
+        }
+        
+        .diagram {
+            background: var(--light);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .member-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+        
+        .member-list li {
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid var(--border);
+            transition: all 0.3s;
+        }
+        
+        .member-list li:hover {
+            border-left-color: var(--primary);
+            background: var(--light);
+        }
+        
+        .member-list .private {
+            border-left-color: var(--danger);
+        }
+        
+        .member-list .static {
+            font-weight: 600;
+        }
+        
+        .member-list .method::before {
+            content: "ƒ ";
+            color: var(--primary);
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .member-list .field::before {
+            content: "◆ ";
+            color: var(--info);
+            margin-right: 5px;
+        }
+        
+        .signature {
+            background: var(--code-bg);
+            color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: "Monaco", "Menlo", "Ubuntu Mono", "JetBrains Mono", monospace;
+            font-size: 0.85em;
+            margin: 15px 0;
+            line-height: 1.6;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .keyword {
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        .type {
+            color: #666;
+        }
+        
+        .parameter {
+            margin: 12px 0;
+            padding: 12px;
+            background: var(--code-bg);
+            border-left: 3px solid var(--javadoc-border);
+            border-radius: 3px;
+        }
+        
+        .param-name {
+            color: #333;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        .param-type {
+            color: var(--primary);
+            font-family: monospace;
+            font-weight: 500;
+        }
+        
+        .param-default {
+            color: var(--text-muted);
+            font-style: italic;
+            font-family: monospace;
+        }
+        
+        .param-desc {
+            color: var(--text-muted);
+            font-size: 0.95em;
+            margin-top: 5px;
+        }
+        
+        .imports {
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .import-item {
+            font-family: monospace;
+            padding: 8px;
+            margin: 5px 0;
+            color: #333;
+            background: white;
+            border-radius: 3px;
+            border-left: 3px solid var(--javadoc-border);
+            font-size: 0.85em;
+        }
+        
+        .private-indicator {
+            display: inline-block;
+            background: var(--danger);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            margin-left: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .static-indicator {
+            display: inline-block;
+            background: #666;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            margin-left: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .type-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .code-block {
+            background: var(--code-bg);
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .code-header {
+            background: #f0f0f0;
+            color: #333;
+            padding: 8px 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        
+        .code-block code {
+            font-family: "Monaco", "Menlo", "Ubuntu Mono", "JetBrains Mono", monospace;
+            font-size: 0.8em;
+            line-height: 1.5;
+            color: #333;
+        }
+        
+        .location {
+            background: #f4f6f8;
+            border-left: 4px solid #0066cc;
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 0.95em;
+            font-family: monospace;
+            color: #555;
+        }
+        
+        .location code {
+            background: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #0066cc;
+            font-weight: 500;
+        }
+        
+        .line-number {
+            display: inline-block;
+            background: #e6f0ff;
+            color: #0066cc;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            margin-left: 8px;
+            font-weight: 600;
+            font-family: monospace;
+        }
+        
+        .docstring {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-left: 4px solid var(--info);
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-style: italic;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+            background: var(--light);
+            padding: 25px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        .toc {
+            background: linear-gradient(135deg, var(--light) 0%, #ffffff 100%);
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+        }
+        
+        .toc h3 {
+            margin: 0 0 15px 0;
+        }
+        
+        .toc ul {
+            list-style-position: inside;
+            margin-left: 10px;
+        }
+        
+        .toc li {
+            margin: 8px 0;
+        }
+        
+        .toc a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+            color: var(--primary-dark);
+        }
+        
+        @media (max-width: 1024px) {
+            .wrapper {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: none;
+                position: static;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+            
+            main {
+                padding: 20px;
+            }
+            
+            .member-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="#classes"><strong>Classes</strong> <span class="badge">7</span></a></li>
+                <li><a href="#interfaces"><strong>Interfaces</strong> <span class="badge">3</span></a></li>
+                <li><a href="#functions"><strong>Functions</strong> <span class="badge">25</span></a></li>
+            </ul>
+            
+            <h3>Classes</h3>
+            <ul><li><a href="#EmailStr">EmailStr</a></li><li><a href="#AbstractUser">AbstractUser</a></li><li><a href="#BaseGreeter">BaseGreeter</a></li><li><a href="#ExcitedGreeter">ExcitedGreeter</a></li><li><a href="#GreeterFactory">GreeterFactory</a></li><li><a href="#User">User</a></li><li><a href="#AuditService">AuditService</a></li></ul>
+            
+            <h3>Interfaces</h3>
+            <ul><li><a href="#EmailValidate">EmailValidate</a></li><li><a href="#GreetingProvider">GreetingProvider</a></li><li><a href="#AbstractUser">AbstractUser</a></li></ul>
+            
+            <h3>Functions</h3>
+            <ul><li><a href="#main">main</a></li><li><a href="#validate">validate</a></li><li><a href="#validate">validate</a></li><li><a href="#getEmail">getEmail</a></li><li><a href="#getAge">getAge</a></li><li><a href="#constructor">constructor</a></li><li><a href="#stringify_map">stringify_map</a></li><li><a href="#stringify_list">stringify_list</a></li><li><a href="#main">main</a></li><li><a href="#greet">greet</a></li><li><a href="#greet">greet</a></li><li><a href="#create">create</a></li><li><a href="#isAuthenticated">isAuthenticated</a></li><li><a href="#login">login</a></li><li><a href="#isAuthenticated">isAuthenticated</a></li><li><a href="#constructor">constructor</a></li><li><a href="#audit_greeting">audit_greeting</a></li><li><a href="#summarize_lengths">summarize_lengths</a></li><li><a href="#clamp">clamp</a></li><li><a href="#accumulate">accumulate</a></li><li><a href="#sum_until">sum_until</a></li><li><a href="#describe_sign">describe_sign</a></li><li><a href="#scale_first">scale_first</a></li><li><a href="#format_message">format_message</a></li><li><a href="#build_provider_meta">build_provider_meta</a></li></ul>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <header>
+                <h1>Api-Rest-Full</h1>
+                <p>Project Documentation</p>
+            </header>
+            
+            <div class="breadcrumb">
+                <span>Home</span>
+                <span>·</span>
+                <span>Documentation</span>
+            </div>
+            
+            <nav>
+                <a href="#classes">Classes</a>
+                <a href="#interfaces">Interfaces</a>
+                <a href="#functions">Functions</a>
+                <a href="#imports">Imports</a>
+            </nav>
+            
+            <main>
+                <div class="toc"><h3>Contents</h3><ul><li><a href="#main">main() (function)</a></li><li><a href="#EmailStr">EmailStr (class)</a></li><li><a href="#AbstractUser">AbstractUser (class)</a></li><li><a href="#EmailValidate">EmailValidate (interface)</a></li><li><a href="#validate">validate() (function)</a></li><li><a href="#validate">validate() (function)</a></li><li><a href="#getEmail">getEmail() (function)</a></li><li><a href="#getAge">getAge() (function)</a></li><li><a href="#constructor">constructor() (function)</a></li><li><a href="#stringify_map">stringify_map() (function)</a></li><li><a href="#stringify_list">stringify_list() (function)</a></li><li><a href="#main">main() (function)</a></li><li><a href="#BaseGreeter">BaseGreeter (class)</a></li><li><a href="#ExcitedGreeter">ExcitedGreeter (class)</a></li><li><a href="#GreeterFactory">GreeterFactory (class)</a></li><li><a href="#GreetingProvider">GreetingProvider (interface)</a></li><li><a href="#greet">greet() (function)</a></li><li><a href="#greet">greet() (function)</a></li><li><a href="#create">create() (function)</a></li><li><a href="#User">User (class)</a></li><li><a href="#AbstractUser">AbstractUser (interface)</a></li><li><a href="#isAuthenticated">isAuthenticated() (function)</a></li><li><a href="#login">login() (function)</a></li><li><a href="#isAuthenticated">isAuthenticated() (function)</a></li><li><a href="#AuditService">AuditService (class)</a></li><li><a href="#constructor">constructor() (function)</a></li><li><a href="#audit_greeting">audit_greeting() (function)</a></li><li><a href="#summarize_lengths">summarize_lengths() (function)</a></li><li><a href="#clamp">clamp() (function)</a></li><li><a href="#accumulate">accumulate() (function)</a></li><li><a href="#sum_until">sum_until() (function)</a></li><li><a href="#describe_sign">describe_sign() (function)</a></li><li><a href="#scale_first">scale_first() (function)</a></li><li><a href="#format_message">format_message() (function)</a></li><li><a href="#build_provider_meta">build_provider_meta() (function)</a></li></ul></div>
+                <section id="classes"><h2>Classes</h2><div class="class-box" id="EmailStr"><div class="member-header"><h3>EmailStr</h3></div><div class="location"><strong>Location:</strong> <code>test.mp</code> <span class="line-number">Line 7</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>
+interface EmailValidate {
+    intent validate(): bool
+}
+
+class EmailStr implements EmailValidate {
+
+    intent constructor(age: int = null, email: Optional&lt;string&gt; = &quot;default_email&quot;){
+        print(f&quot;Created statament email! email={email}&quot;)</code></pre>
+        </div><div class="hierarchy"><strong>Implements:</strong><br><div class="hierarchy-item implements">EmailValidate</div></div><h4>Members</h4><h5>Campos</h5><ul class="member-list"><li class="field"><strong>email_raw</strong> <span class="param-type">string</span></li><li class="field private"><strong>age</strong> <span class="param-type">int</span><span class="private-indicator">private</span></li></ul><h5>Métodos</h5><ul class="member-list"><li class="method"><strong>constructor</strong>(age: int, email: Optional<string>)</li><li class="method"><strong>validate</strong> <span class="param-type">→ bool</span></li><li class="method"><strong>getEmail</strong> <span class="param-type">→ string</span></li><li class="method"><strong>getAge</strong> <span class="param-type">→ int</span></li></ul></div><div class="class-box" id="AbstractUser"><div class="member-header"><h3>AbstractUser</h3></div><div class="location"><strong>Location:</strong> <code>test.mp</code> <span class="line-number">Line 34</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>}
+
+# Use &#39;class&#39; instead of &#39;model&#39; for data structures
+# &#39;model&#39; is reserved for ML operations (create, train, predict)
+class AbstractUser {
+    var first_name: string
+    var last_name: string
+    var email: EmailStr</code></pre>
+        </div><h4>Members</h4><h5>Campos</h5><ul class="member-list"><li class="field"><strong>first_name</strong> <span class="param-type">string</span></li><li class="field"><strong>last_name</strong> <span class="param-type">string</span></li><li class="field"><strong>email</strong> <span class="param-type">EmailStr</span></li></ul><h5>Métodos</h5><ul class="member-list"><li class="method"><strong>constructor</strong>(first_name: string, last_name: string...)</li></ul></div><div class="class-box" id="BaseGreeter"><div class="member-header"><h3>BaseGreeter</h3></div><div class="location"><strong>Location:</strong> <code>domain\greeter.mp</code> <span class="line-number">Line 4</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>interface GreetingProvider {
+    &quot;&quot;&quot;Contrato: gera uma saudação textual.&quot;&quot;&quot;
+    intent greet(name: string): string
+}
+
+class BaseGreeter implements GreetingProvider {
+    &quot;&quot;&quot;Implementação simples que atende ao contrato da interface.&quot;&quot;&quot;
+    intent greet(name: string): string {
+        return f&quot;Hello {name}&quot;</code></pre>
+        </div><div class="hierarchy"><strong>Implements:</strong><br><div class="hierarchy-item implements">GreetingProvider</div></div><h4>Members</h4><h5>Métodos</h5><ul class="member-list"><li class="method"><strong>greet</strong>(name: string) <span class="param-type">→ string</span></li></ul></div><div class="class-box" id="ExcitedGreeter"><div class="member-header"><h3>ExcitedGreeter</h3></div><div class="location"><strong>Location:</strong> <code>domain\greeter.mp</code> <span class="line-number">Line 11</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>    intent greet(name: string): string {
+        return f&quot;Hello {name}&quot;
+    }
+}
+
+class ExcitedGreeter extends BaseGreeter {
+    &quot;&quot;&quot;Override mantendo assinatura e tipo de retorno do pai.&quot;&quot;&quot;
+    intent greet(name: string): string {
+        return f&quot;Hello {name}!&quot;</code></pre>
+        </div><div class="hierarchy"><strong>Hierarchy:</strong><br><div class="hierarchy-item extends">BaseGreeter</div></div><div class="diagram">
+        <svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" style="max-width: 400px; height: auto;">
+            <!-- Parent class -->
+            <rect x="50" y="10" width="140" height="60" fill="#667eea" stroke="#667eea" stroke-width="2" rx="4"/>
+            <text x="120" y="45" text-anchor="middle" fill="white" font-weight="bold">BaseGreeter</text>
+            
+            <!-- Arrow -->
+            <line x1="120" y1="70" x2="120" y2="110" stroke="#667eea" stroke-width="2" marker-end="url(#arrowhead)"/>
+            
+            <!-- Child class -->
+            <rect x="50" y="110" width="140" height="60" fill="#764ba2" stroke="#764ba2" stroke-width="2" rx="4"/>
+            <text x="120" y="145" text-anchor="middle" fill="white" font-weight="bold">ExcitedGreeter</text>
+            
+            <!-- Arrow marker definition -->
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+                    <polygon points="0 0, 10 5, 0 10" fill="#667eea"/>
+                </marker>
+            </defs>
+        </svg>
+        </div><h4>Members</h4><h5>Métodos</h5><ul class="member-list"><li class="method"><strong>greet</strong>(name: string) <span class="param-type">→ string</span></li></ul></div><div class="class-box" id="GreeterFactory"><div class="member-header"><h3>GreeterFactory</h3></div><div class="location"><strong>Location:</strong> <code>domain\greeter.mp</code> <span class="line-number">Line 18</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>    intent greet(name: string): string {
+        return f&quot;Hello {name}!&quot;
+    }
+}
+
+class GreeterFactory {
+    &quot;&quot;&quot;Cria providers com base em flags simples.&quot;&quot;&quot;
+    intent create(excited: bool): GreetingProvider {
+        if (excited) {</code></pre>
+        </div><h4>Members</h4><h5>Métodos</h5><ul class="member-list"><li class="method"><strong>create</strong>(excited: bool) <span class="param-type">→ GreetingProvider</span></li></ul></div><div class="class-box" id="User"><div class="member-header"><h3>User</h3></div><div class="location"><strong>Location:</strong> <code>schemas\init.mp</code> <span class="line-number">Line 4</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>interface AbstractUser {
+   intent isAuthenticated(session_id: string): bool 
+   intent login(email: string): any 
+}
+
+class User implements AbstractUser {
+   
+   private var name: string
+   private var role: string</code></pre>
+        </div><div class="hierarchy"><strong>Implements:</strong><br><div class="hierarchy-item implements">AbstractUser</div></div><h4>Members</h4><h5>Campos</h5><ul class="member-list"><li class="field"><strong>name</strong> <span class="param-type">string</span></li><li class="field private"><strong>role</strong> <span class="param-type">string</span><span class="private-indicator">private</span></li></ul><h5>Métodos</h5><ul class="member-list"><li class="method private"><strong>constructor</strong>(name: string, role: string)<span class="private-indicator">private</span></li><li class="method"><strong>login</strong>(email: string) <span class="param-type">→ any</span></li><li class="method"><strong>isAuthenticated</strong>(session_id: string) <span class="param-type">→ bool</span></li></ul></div><div class="class-box" id="AuditService"><div class="member-header"><h3>AuditService</h3></div><div class="location"><strong>Location:</strong> <code>services\audit_service.mp</code> <span class="line-number">Line 1</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>from examples.myproject.domain.greeter import GreetingProvider
+
+class AuditService {
+    private var logger: Logger
+
+    intent constructor(logger: Logger) {</code></pre>
+        </div><h4>Members</h4><h5>Campos</h5><ul class="member-list"><li class="field"><strong>logger</strong> <span class="param-type">Logger</span></li><li class="field"><strong>message</strong> <span class="param-type">string</span></li><li class="field"><strong>formatted</strong> <span class="param-type">string</span></li><li class="field"><strong>total</strong> <span class="param-type">int</span></li></ul><h5>Métodos</h5><ul class="member-list"><li class="method private"><strong>constructor</strong>(logger: Logger)<span class="private-indicator">private</span></li><li class="method"><strong>audit_greeting</strong>(provider: GreetingProvider, name: string) <span class="param-type">→ string</span></li><li class="method"><strong>summarize_lengths</strong>(messages: List[string]) <span class="param-type">→ int</span></li></ul></div></section>
+                <section id="interfaces"><h2>Interfaces</h2><div class="interface-box" id="EmailValidate"><div class="member-header"><h3>EmailValidate</h3></div><div class="location"><strong>Location:</strong> <code>test.mp</code> <span class="line-number">Line 3</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>print(&quot;Hello, world!&quot;)
+
+var logger = new Logger()
+
+interface EmailValidate {
+    intent validate(): bool
+}
+</code></pre>
+        </div></div><div class="interface-box" id="GreetingProvider"><div class="member-header"><h3>GreetingProvider</h3></div><div class="location"><strong>Location:</strong> <code>domain\greeter.mp</code> <span class="line-number">Line 1</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>interface GreetingProvider {
+    &quot;&quot;&quot;Contrato: gera uma saudação textual.&quot;&quot;&quot;
+    intent greet(name: string): string
+}</code></pre>
+        </div></div><div class="interface-box" id="AbstractUser"><div class="member-header"><h3>AbstractUser</h3></div><div class="location"><strong>Location:</strong> <code>schemas\init.mp</code> <span class="line-number">Line 1</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>interface AbstractUser {
+   intent isAuthenticated(session_id: string): bool 
+   intent login(email: string): any 
+}</code></pre>
+        </div></div></section>
+                <section id="functions"><h2>Functions</h2><div class="function-box" id="main"><div class="member-header"><h3>main</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 6</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>from examples.myproject.domain.greeter import GreetingProvider, GreeterFactory
+from examples.myproject.services.audit_service import AuditService
+from examples.myproject.utils.math_utils import accumulate, scale_first, describe_sign
+from examples.myproject.utils.text_utils import format_message, build_provider_meta
+
+
+intent main() {
+	&quot;&quot;&quot;Fluxo principal de demonstração.&quot;&quot;&quot;
+
+	print(f&quot;Starting MF07 AST demo: {StringHelpers.find(&#39;lucas&#39;, &#39;s&#39;)}&quot;)</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">main(): void</span></div></div><div class="function-box" id="validate"><div class="member-header"><h3>validate</h3></div><div class="location"><strong>Location:</strong> <code>test.mp</code> <span class="line-number">Line 5</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>
+var logger = new Logger()
+
+interface EmailValidate {
+    intent validate(): bool
+}
+
+class EmailStr implements EmailValidate {
+
+    intent constructor(age: int = null, email: Optional&lt;string&gt; = &quot;default_email&quot;){
+        print(f&quot;Created statament email! email={email}&quot;)
+        this.email_raw = email
+        this.age = age</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">validate(): bool
+}
+
+class EmailStr implements EmailValidate {
+
+    intent constructor(age, email: Optional<string>): void</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">)</span> <span class="param-type">bool
+}
+
+class EmailStr implements EmailValidate {
+
+    intent constructor(age</span> <span class="param-default">= null</span></div><div class="parameter"><span class="param-name">email</span> <span class="param-type">Optional<string></span> <span class="param-default">= "default_email"</span></div></div><div class="function-box" id="validate"><div class="member-header"><h3>validate</h3></div><div class="location"><strong>Location:</strong> <code>test.mp</code> <span class="line-number">Line 15</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        print(f&quot;Created statament email! email={email}&quot;)
+        this.email_raw = email
+        this.age = age
+    }
+
+    intent validate(): bool {
+        return &quot;@gmail&quot; in this.email_raw and this.age &gt;= 18
+    }
+</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">validate(): bool</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">bool</span></div></div><div class="function-box" id="getEmail"><div class="member-header"><h3>getEmail</h3></div><div class="location"><strong>Location:</strong> <code>test.mp</code> <span class="line-number">Line 19</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>
+    intent validate(): bool {
+        return &quot;@gmail&quot; in this.email_raw and this.age &gt;= 18
+    }
+
+    intent getEmail(): string {
+        return this.email_raw
+    }
+</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">getEmail(): string</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="getAge"><div class="member-header"><h3>getAge</h3></div><div class="location"><strong>Location:</strong> <code>test.mp</code> <span class="line-number">Line 23</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>
+    intent getEmail(): string {
+        return this.email_raw
+    }
+
+    intent getAge(): int{
+       return this.age 
+    }
+</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">getAge(): int</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">int</span></div></div><div class="function-box" id="constructor"><div class="member-header"><h3>constructor</h3></div><div class="location"><strong>Location:</strong> <code>test.mp</code> <span class="line-number">Line 38</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>class AbstractUser {
+    var first_name: string
+    var last_name: string
+    var email: EmailStr
+    
+    intent constructor(first_name: string = &quot;DEFAULT_TEST&quot;, last_name: string = &quot;&quot;, email: EmailStr = null) {
+        this.first_name = first_name
+        this.last_name = last_name
+        this.email_obj = email != null</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">constructor(first_name: string, last_name: string, email: EmailStr): void</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">first_name</span> <span class="param-type">string</span> <span class="param-default">= "DEFAULT_TEST"</span></div><div class="parameter"><span class="param-name">last_name</span> <span class="param-type">string</span> <span class="param-default">= ""</span></div><div class="parameter"><span class="param-name">email</span> <span class="param-type">EmailStr</span> <span class="param-default">= null</span></div></div><div class="function-box" id="stringify_map"><div class="member-header"><h3>stringify_map</h3></div><div class="location"><strong>Location:</strong> <code>db_demo\db_demo.mp</code> <span class="line-number">Line 10</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>
+var logger = new Logger(LogLevel.INFO, &quot;db_demo&quot;)
+
+# Pequenos helpers para formatar registros e listas de forma legível
+intent stringify_map(m: any): string {
+    if (m == null) { return &quot;&lt;null&gt;&quot; }
+    var keys = m.keys()
+    if (keys == null) { return f&quot;{m}&quot; }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">stringify_map(m: any): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">m</span> <span class="param-type">any</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="stringify_list"><div class="member-header"><h3>stringify_list</h3></div><div class="location"><strong>Location:</strong> <code>db_demo\db_demo.mp</code> <span class="line-number">Line 27</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        i = i + 1
+    }
+    return &quot;{ &quot; + parts + &quot; }&quot;
+}
+
+intent stringify_list(lst: any): string {
+    if (lst == null) { return &quot;[]&quot; }
+    var i = 0
+    var parts = &quot;[&quot;</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">stringify_list(lst: any): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">lst</span> <span class="param-type">any</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="main"><div class="member-header"><h3>main</h3></div><div class="location"><strong>Location:</strong> <code>db_demo\db_demo.mp</code> <span class="line-number">Line 44</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>    return parts
+}
+
+# Configura driver padrao (usar in-memory) e conecta
+intent main() {
+    try {
+        logger.info(&quot;start demo&quot;)
+        register_driver(&quot;memory&quot;, new InMemoryDriver())</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">main(): void</span></div></div><div class="function-box" id="greet"><div class="member-header"><h3>greet</h3></div><div class="location"><strong>Location:</strong> <code>domain\greeter.mp</code> <span class="line-number">Line 2</span></div><p class="docstring">Contrato: gera uma saudação textual.</p><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>interface GreetingProvider {
+    &quot;&quot;&quot;Contrato: gera uma saudação textual.&quot;&quot;&quot;
+    intent greet(name: string): string
+}
+
+class BaseGreeter implements GreetingProvider {
+    &quot;&quot;&quot;Implementação simples que atende ao contrato da interface.&quot;&quot;&quot;
+    intent greet(name: string): string {
+        return f&quot;Hello {name}&quot;
+    }
+}</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">greet(name: string)): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">name</span> <span class="param-type">string)</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="greet"><div class="member-header"><h3>greet</h3></div><div class="location"><strong>Location:</strong> <code>domain\greeter.mp</code> <span class="line-number">Line 14</span></div><p class="docstring">Override mantendo assinatura e tipo de retorno do pai.</p><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>}
+
+class ExcitedGreeter extends BaseGreeter {
+    &quot;&quot;&quot;Override mantendo assinatura e tipo de retorno do pai.&quot;&quot;&quot;
+    intent greet(name: string): string {
+        return f&quot;Hello {name}!&quot;
+    }
+}</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">greet(name: string): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">name</span> <span class="param-type">string</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="create"><div class="member-header"><h3>create</h3></div><div class="location"><strong>Location:</strong> <code>domain\greeter.mp</code> <span class="line-number">Line 21</span></div><p class="docstring">Cria providers com base em flags simples.</p><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>}
+
+class GreeterFactory {
+    &quot;&quot;&quot;Cria providers com base em flags simples.&quot;&quot;&quot;
+    intent create(excited: bool): GreetingProvider {
+        if (excited) {
+            return new ExcitedGreeter()
+        }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">create(excited: bool): GreetingProvider</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">excited</span> <span class="param-type">bool</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">GreetingProvider</span></div></div><div class="function-box" id="isAuthenticated"><div class="member-header"><h3>isAuthenticated</h3></div><div class="location"><strong>Location:</strong> <code>schemas\init.mp</code> <span class="line-number">Line 1</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>interface AbstractUser {
+   intent isAuthenticated(session_id: string): bool 
+   intent login(email: string): any 
+}
+
+class User implements AbstractUser {
+   
+   private var name: string
+   private var role: string
+
+
+   intent constructor(name: string, role: string = &quot;guest&quot;) {
+      print(f&quot;name={name}&quot;)
+      this.name = name;  
+      this.role = role;</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">isAuthenticated(session_id: string), role: string): void</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">session_id</span> <span class="param-type">string)</span></div><div class="parameter"><span class="param-name">role</span> <span class="param-type">string</span> <span class="param-default">= "guest"</span></div></div><div class="function-box" id="login"><div class="member-header"><h3>login</h3></div><div class="location"><strong>Location:</strong> <code>schemas\init.mp</code> <span class="line-number">Line 16</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>      print(f&quot;name={name}&quot;)
+      this.name = name;  
+      this.role = role;
+   }
+
+   intent login(email: string): any {
+      return f&quot;login not implemented for {email}&quot;;
+   }
+</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">login(email: string): any</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">email</span> <span class="param-type">string</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">any</span></div></div><div class="function-box" id="isAuthenticated"><div class="member-header"><h3>isAuthenticated</h3></div><div class="location"><strong>Location:</strong> <code>schemas\init.mp</code> <span class="line-number">Line 20</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>
+   intent login(email: string): any {
+      return f&quot;login not implemented for {email}&quot;;
+   }
+
+   intent isAuthenticated(session_id: string): bool {
+      return false;
+   }
+</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">isAuthenticated(session_id: string): bool</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">session_id</span> <span class="param-type">string</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">bool</span></div></div><div class="function-box" id="constructor"><div class="member-header"><h3>constructor</h3></div><div class="location"><strong>Location:</strong> <code>services\audit_service.mp</code> <span class="line-number">Line 4</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>from examples.myproject.domain.greeter import GreetingProvider
+
+class AuditService {
+    private var logger: Logger
+
+    intent constructor(logger: Logger) {
+        this.logger = logger
+    }
+</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">constructor(logger: Logger): void</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">logger</span> <span class="param-type">Logger</span></div></div><div class="function-box" id="audit_greeting"><div class="member-header"><h3>audit_greeting</h3></div><div class="location"><strong>Location:</strong> <code>services\audit_service.mp</code> <span class="line-number">Line 8</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>
+    intent constructor(logger: Logger) {
+        this.logger = logger
+    }
+
+    intent audit_greeting(provider: GreetingProvider, name: string): string {
+        var stamp = DateTime.now()
+        var message: string = provider.greet(name)
+        var formatted: string = f&quot;[{stamp.format(&#39;%Y-%m-%d %H:%M:%S&#39;)}] provider={type(provider)} name={name} message={message}&quot;</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">audit_greeting(provider: GreetingProvider, name: string): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">provider</span> <span class="param-type">GreetingProvider</span></div><div class="parameter"><span class="param-name">name</span> <span class="param-type">string</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="summarize_lengths"><div class="member-header"><h3>summarize_lengths</h3></div><div class="location"><strong>Location:</strong> <code>services\audit_service.mp</code> <span class="line-number">Line 16</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        var formatted: string = f&quot;[{stamp.format(&#39;%Y-%m-%d %H:%M:%S&#39;)}] provider={type(provider)} name={name} message={message}&quot;
+        this.logger.info(formatted)
+        return formatted
+    }
+
+    intent summarize_lengths(messages: List[string]): int {
+        var total: int = 0
+        for (var msg in messages) {
+            total = total + len(msg)</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">summarize_lengths(messages: List[string]): int</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">messages</span> <span class="param-type">List[string]</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">int</span></div></div><div class="function-box" id="clamp"><div class="member-header"><h3>clamp</h3></div><div class="location"><strong>Location:</strong> <code>utils\math_utils.mp</code> <span class="line-number">Line 1</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>intent clamp(value: int, min_value: int, max_value: int): int {
+    if (value &lt; min_value) {
+        return min_value
+    }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">clamp(value: int, min_value: int, max_value: int): int</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">value</span> <span class="param-type">int</span></div><div class="parameter"><span class="param-name">min_value</span> <span class="param-type">int</span></div><div class="parameter"><span class="param-name">max_value</span> <span class="param-type">int</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">int</span></div></div><div class="function-box" id="accumulate"><div class="member-header"><h3>accumulate</h3></div><div class="location"><strong>Location:</strong> <code>utils\math_utils.mp</code> <span class="line-number">Line 9</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        return max_value
+    }
+    return value
+}
+
+intent accumulate(numbers: List[int]): int {
+    var total: int = 0
+    for (var n in numbers) {
+        total = total + n</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">accumulate(numbers: List[int]): int</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">numbers</span> <span class="param-type">List[int]</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">int</span></div></div><div class="function-box" id="sum_until"><div class="member-header"><h3>sum_until</h3></div><div class="location"><strong>Location:</strong> <code>utils\math_utils.mp</code> <span class="line-number">Line 17</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        total = total + n
+    }
+    return total
+}
+
+intent sum_until(limit: int): int {
+    var i: int = 0
+    var total: int = 0
+    while (i &lt;= limit) {</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">sum_until(limit: int): int</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">limit</span> <span class="param-type">int</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">int</span></div></div><div class="function-box" id="describe_sign"><div class="member-header"><h3>describe_sign</h3></div><div class="location"><strong>Location:</strong> <code>utils\math_utils.mp</code> <span class="line-number">Line 27</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        i = i + 1
+    }
+    return total
+}
+
+intent describe_sign(value: int): string {
+    if (value == 0) {
+        return &quot;zero&quot;
+    }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">describe_sign(value: int): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">value</span> <span class="param-type">int</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="scale_first"><div class="member-header"><h3>scale_first</h3></div><div class="location"><strong>Location:</strong> <code>utils\math_utils.mp</code> <span class="line-number">Line 34</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        return &quot;zero&quot;
+    }
+    return value &gt; 0 ? &quot;positive&quot; : &quot;negative&quot;
+}
+
+intent scale_first(numbers: List[int], factor: int): int {
+    var mapper = fn(x) { return x * factor }
+    if (len(numbers) == 0) {
+        return 0</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">scale_first(numbers: List[int], factor: int): int</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">numbers</span> <span class="param-type">List[int]</span></div><div class="parameter"><span class="param-name">factor</span> <span class="param-type">int</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">int</span></div></div><div class="function-box" id="format_message"><div class="member-header"><h3>format_message</h3></div><div class="location"><strong>Location:</strong> <code>utils\text_utils.mp</code> <span class="line-number">Line 1</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>from examples.myproject.domain.greeter import GreetingProvider
+
+intent format_message(prefix: string, text: string, suffix: string = &quot;!&quot;): string {
+    return f&quot;{prefix}: {text}{suffix}&quot;
+}
+</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">format_message(prefix: string, text: string, suffix: string): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">prefix</span> <span class="param-type">string</span></div><div class="parameter"><span class="param-name">text</span> <span class="param-type">string</span></div><div class="parameter"><span class="param-name">suffix</span> <span class="param-type">string</span> <span class="param-default">= "!"</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="build_provider_meta"><div class="member-header"><h3>build_provider_meta</h3></div><div class="location"><strong>Location:</strong> <code>utils\text_utils.mp</code> <span class="line-number">Line 5</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>
+intent format_message(prefix: string, text: string, suffix: string = &quot;!&quot;): string {
+    return f&quot;{prefix}: {text}{suffix}&quot;
+}
+
+intent build_provider_meta(provider: GreetingProvider): string {
+    var provider_type: string = type(provider)
+    return f&quot;provider={provider_type}&quot;
+}</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">build_provider_meta(provider: GreetingProvider): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">provider</span> <span class="param-type">GreetingProvider</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div></section>
+            </main>
+            
+            <footer>
+                <p>Generated by CorpLang Documentation Generator</p>
+                <p><section id="imports"><h2>Imports</h2><div class="imports"><div class="import-item">from core.database import set_default_driver, set_default_config, connect, execute, disconnect, register_driver, InMemoryDriver</div><div class="import-item">from core.map import Map</div><div class="import-item">from core.orm import Field, Model, Relation, register_model</div><div class="import-item">from examples.myproject.domain.greeter import GreetingProvider</div><div class="import-item">from examples.myproject.domain.greeter import GreetingProvider, GreeterFactory</div><div class="import-item">from examples.myproject.services.audit_service import AuditService</div><div class="import-item">from examples.myproject.utils.math_utils import accumulate, scale_first, describe_sign</div><div class="import-item">from examples.myproject.utils.text_utils import format_message, build_provider_meta</div></div></section></p>
+            </footer>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "app": {
+    "name": "CorpSystem",
+    "version": "1.0.0"
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432
+  }
+}

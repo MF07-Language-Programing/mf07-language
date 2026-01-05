@@ -1,0 +1,217 @@
+name: Build and package
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [main, master, feature/docstring-resource, 'release/**', 'feat/**']
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies (Linux / macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip setuptools wheel || true
+          if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+          pip install pyinstaller build || true
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          if (Test-Path -Path 'requirements.txt') { pip install -r requirements.txt }
+          pip install pyinstaller build
+
+      - name: Build wheel
+        shell: bash
+        run: |
+          python -m build --wheel || true
+
+      - name: Build standalone executable (Linux / macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p packaging
+          pyinstaller --onefile --name mf mf.py 2>&1 | tee packaging/build.log || true
+          ls -la dist/ || true
+
+      - name: Build standalone executable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path packaging | Out-Null
+          pyinstaller --onefile --name mf.exe mf.py 2>&1 | Tee-Object -FilePath packaging\build.log
+          Get-ChildItem -Path dist\ -Recurse | Format-Table -AutoSize
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mf-${{ matrix.os }}
+          path: |
+            dist/**
+            packaging/build.log
+
+  # (publish_release has been replaced by `tag_and_release` above to create artifact releases per-distro)
+
+  tag_and_release:
+    name: Tag and create distro releases
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        distro:
+          - os: ubuntu-latest
+            short: linux
+            artifact_name: mf-ubuntu-latest
+          - os: windows-latest
+            short: windows
+            artifact_name: mf-windows-latest
+          - os: macos-latest
+            short: macos
+            artifact_name: mf-macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Get VERSION
+        id: get_version
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n' || true)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Download distro artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.distro.artifact_name }}
+          path: artifacts/${{ matrix.distro.short }}
+
+      - name: Create source ZIP
+        run: |
+          mkdir -p artifacts/src
+          VERSION=${{ steps.get_version.outputs.version }}
+          zip -r artifacts/src/corplang-src-${VERSION}-${{ matrix.distro.short }}.zip src/corplang || true
+
+      - name: Locate executable
+        id: find_exe
+        run: |
+          set -e
+          ART="artifacts/${{ matrix.distro.short }}"
+          EXE=$(find ${ART} -type f -name 'mf*' -print -quit || true)
+          echo "Found: ${EXE}"
+          if [ -z "${EXE}" ]; then
+            EXE=$(find ${ART} -type f -name 'mf*' -print -quit || true)
+          fi
+          echo "exe=${EXE}" >> $GITHUB_OUTPUT
+
+      - name: Create checksum and sign (if available)
+        env:
+          EXE: ${{ steps.find_exe.outputs.exe }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          set -e
+          if [ -n "$EXE" ]; then
+            sha256sum "$EXE" > "$EXE.sha256" || true
+            echo "Checksum created: $EXE.sha256"
+            if [ -n "$GPG_PRIVATE_KEY" ]; then
+              echo "Importing GPG key"
+              echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+              echo "Signing executable"
+              gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --armor --detach-sign "$EXE" || true
+            fi
+          else
+            echo "No executable found in artifact; skipping checksum/signing."
+          fi
+
+      - name: Create tag
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          GIT_TAG=v${VERSION}-${{ matrix.distro.short }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "$GIT_TAG" >/dev/null 2>&1; then
+            echo "Tag $GIT_TAG already exists; skipping creation"
+          else
+            git tag -a "$GIT_TAG" -m "Release $GIT_TAG"
+            git push origin "$GIT_TAG"
+          fi
+        # (Run executed above to generate and push tag)
+
+      - name: Create Release (tag)
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}-${{ matrix.distro.short }}
+          release_name: Release v${{ steps.get_version.outputs.version }}-${{ matrix.distro.short }}
+          body: Release created by CI for ${{ matrix.distro.short }}
+          draft: false
+          prerelease: false
+      # Upload release assets: executable, checksum, source zip
+
+      - name: Set EXE basename
+        if: ${{ steps.find_exe.outputs.exe != '' }}
+        id: set_basename
+        run: |
+          EXE="${{ steps.find_exe.outputs.exe }}"
+          BASENAME=$(basename "$EXE")
+          echo "exe_name=$BASENAME" >> $GITHUB_OUTPUT
+
+      - name: Upload release assets (binary)
+        if: ${{ steps.find_exe.outputs.exe != '' }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_exe.outputs.exe }}
+          asset_name: ${{ steps.set_basename.outputs.exe_name }}
+          asset_content_type: application/octet-stream
+
+      - name: Upload release assets (checksum)
+        if: ${{ steps.find_exe.outputs.exe != '' }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_exe.outputs.exe }}.sha256
+          asset_name: ${{ steps.set_basename.outputs.exe_name }}.sha256
+          asset_content_type: text/plain
+
+      - name: Upload release source ZIP
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/src/corplang-src-${{ steps.get_version.outputs.version }}-${{ matrix.distro.short }}.zip
+          asset_name: corplang-src-${{ steps.get_version.outputs.version }}-${{ matrix.distro.short }}.zip
+          asset_content_type: application/zip

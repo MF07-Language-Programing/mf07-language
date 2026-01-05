@@ -1,0 +1,4 @@
+# AbstractUser
+
+**Tipo:** interface
+

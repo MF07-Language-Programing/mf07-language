@@ -1,0 +1,17 @@
+[INFO] Total de amostras: 3 (classes: {"greeting": 2, "farewell": 1})
+
+Treinando modelo... |
+                      
+[INFO] Modelo salvo em: D:\users\Lucas\companys\Imovel Periciado Sistemas\programing-language\examples\myproject_with_train\models\basic_kit_pipeline.joblib
+---
+Texto: hello
+Predição: greeting
+Probabilidades: {'farewell': 0.3916, 'greeting': 0.6084}
+---
+Texto: goodbye
+Predição: farewell
+Probabilidades: {'farewell': 0.6084, 'greeting': 0.3916}
+---
+Texto: how are you
+Predição: greeting
+Probabilidades: {'farewell': 0.3916, 'greeting': 0.6084}

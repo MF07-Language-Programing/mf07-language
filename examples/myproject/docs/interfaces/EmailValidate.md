@@ -1,0 +1,4 @@
+# EmailValidate
+
+**Tipo:** interface
+

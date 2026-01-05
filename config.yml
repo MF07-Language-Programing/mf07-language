@@ -1,0 +1,13 @@
+logging:
+  level: "DEBUG"
+  format: "[%(levelname)s] %(name)s: %(message)s"
+
+interpreter:
+  strict_mode: true
+  trace_errors: true
+  compiler_view: false
+
+ui:
+  theme: "uv"
+  animation_speed: 0.01
+  enabled: true

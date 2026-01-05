@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação - Fixed Documentation</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #0066cc;
+            --primary-dark: #003d7a;
+            --success: #28a745;
+            --info: #17a2b8;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --dark: #1a1a1a;
+            --light: #f8f9fa;
+            --border: #dee2e6;
+            --text: #333;
+            --text-muted: #666;
+            --code-bg: #f4f4f4;
+            --javadoc-blue: #0066cc;
+            --javadoc-border: #bccff0;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: #fafbfc;
+            padding: 20px;
+        }
+        
+        .wrapper {
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 20px;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 4px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            max-height: 90vh;
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+            border: 1px solid #ddd;
+        }
+        
+        .sidebar h3 {
+            color: var(--primary);
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--javadoc-border);
+            font-weight: 600;
+        }
+        
+        .sidebar ul {
+            list-style: none;
+        }
+        
+        .sidebar li {
+            margin: 8px 0;
+        }
+        
+        .sidebar a {
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.95em;
+            padding: 8px 12px;
+            display: block;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .sidebar a:hover {
+            background: var(--light);
+            color: var(--primary);
+            padding-left: 16px;
+        }
+        
+        .sidebar .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 8px;
+        }
+        
+        .main-content {
+            flex: 1;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 400;
+            letter-spacing: 0px;
+        }
+        
+        header p {
+            font-size: 1em;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+        
+        .breadcrumb {
+            background: var(--light);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            font-size: 0.95em;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+            color: var(--primary-dark);
+        }
+        
+        .breadcrumb span {
+            color: var(--text-muted);
+        }
+        
+        nav {
+            background: var(--light);
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        nav a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 16px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        nav a:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        main {
+            padding: 40px;
+        }
+        
+        section {
+            margin-bottom: 50px;
+        }
+        
+        h2 {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+        }
+        
+        h3 {
+            color: var(--primary-dark);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        h4 {
+            color: var(--text);
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .class-box, .interface-box, .function-box {
+            background: linear-gradient(135deg, #fafbfc 0%, #ffffff 100%);
+            border-left: 5px solid var(--primary);
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            transition: all 0.3s;
+        }
+        
+        .class-box:hover, .interface-box:hover, .function-box:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+        
+        .interface-box {
+            border-left-color: #666;
+        }
+        
+        .function-box {
+            border-left-color: #0066cc;
+        }
+        
+        .member-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .member-header h3 {
+            margin: 0;
+            margin-right: 10px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .hierarchy {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .hierarchy-item {
+            padding: 5px 0;
+            padding-left: 20px;
+        }
+        
+        .hierarchy-item.extends::before {
+            content: "└─ extends ";
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        .hierarchy-item.implements::before {
+            content: "└─ implements ";
+            color: var(--info);
+            font-weight: bold;
+        }
+        
+        .diagram {
+            background: var(--light);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .member-list {
+            list-style: none;
+            margin: 15px 0;
+        }
+        
+        .member-list li {
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid var(--border);
+            transition: all 0.3s;
+        }
+        
+        .member-list li:hover {
+            border-left-color: var(--primary);
+            background: var(--light);
+        }
+        
+        .member-list .private {
+            border-left-color: var(--danger);
+        }
+        
+        .member-list .static {
+            font-weight: 600;
+        }
+        
+        .member-list .method::before {
+            content: "ƒ ";
+            color: var(--primary);
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .member-list .field::before {
+            content: "◆ ";
+            color: var(--info);
+            margin-right: 5px;
+        }
+        
+        .signature {
+            background: var(--code-bg);
+            color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: "Monaco", "Menlo", "Ubuntu Mono", "JetBrains Mono", monospace;
+            font-size: 0.85em;
+            margin: 15px 0;
+            line-height: 1.6;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .keyword {
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        .type {
+            color: #666;
+        }
+        
+        .parameter {
+            margin: 12px 0;
+            padding: 12px;
+            background: var(--code-bg);
+            border-left: 3px solid var(--javadoc-border);
+            border-radius: 3px;
+        }
+        
+        .param-name {
+            color: #333;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        .param-type {
+            color: var(--primary);
+            font-family: monospace;
+            font-weight: 500;
+        }
+        
+        .param-default {
+            color: var(--text-muted);
+            font-style: italic;
+            font-family: monospace;
+        }
+        
+        .param-desc {
+            color: var(--text-muted);
+            font-size: 0.95em;
+            margin-top: 5px;
+        }
+        
+        .imports {
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .import-item {
+            font-family: monospace;
+            padding: 8px;
+            margin: 5px 0;
+            color: #333;
+            background: white;
+            border-radius: 3px;
+            border-left: 3px solid var(--javadoc-border);
+            font-size: 0.85em;
+        }
+        
+        .private-indicator {
+            display: inline-block;
+            background: var(--danger);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            margin-left: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .static-indicator {
+            display: inline-block;
+            background: #666;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            margin-left: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .type-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .code-block {
+            background: var(--code-bg);
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .code-header {
+            background: #f0f0f0;
+            color: #333;
+            padding: 8px 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            padding: 15px;
+            overflow-x: auto;
+        }
+        
+        .code-block code {
+            font-family: "Monaco", "Menlo", "Ubuntu Mono", "JetBrains Mono", monospace;
+            font-size: 0.8em;
+            line-height: 1.5;
+            color: #333;
+        }
+        
+        .location {
+            background: #f4f6f8;
+            border-left: 4px solid #0066cc;
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 0.95em;
+            font-family: monospace;
+            color: #555;
+        }
+        
+        .location code {
+            background: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #0066cc;
+            font-weight: 500;
+        }
+        
+        .line-number {
+            display: inline-block;
+            background: #e6f0ff;
+            color: #0066cc;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.85em;
+            margin-left: 8px;
+            font-weight: 600;
+            font-family: monospace;
+        }
+        
+        .docstring {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-left: 4px solid var(--info);
+            padding: 12px 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-style: italic;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+            background: var(--light);
+            padding: 25px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        .toc {
+            background: linear-gradient(135deg, var(--light) 0%, #ffffff 100%);
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+        }
+        
+        .toc h3 {
+            margin: 0 0 15px 0;
+        }
+        
+        .toc ul {
+            list-style-position: inside;
+            margin-left: 10px;
+        }
+        
+        .toc li {
+            margin: 8px 0;
+        }
+        
+        .toc a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+            color: var(--primary-dark);
+        }
+        
+        @media (max-width: 1024px) {
+            .wrapper {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: none;
+                position: static;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+            
+            main {
+                padding: 20px;
+            }
+            
+            .member-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+    
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <h3>Navigation</h3>
+            <ul>
+                <li><a href="#classes"><strong>Classes</strong> <span class="badge">2</span></a></li>
+                <li><a href="#interfaces"><strong>Interfaces</strong> <span class="badge">1</span></a></li>
+                <li><a href="#functions"><strong>Functions</strong> <span class="badge">8</span></a></li>
+            </ul>
+            
+            <h3>Classes</h3>
+            <ul><li><a href="#Pessoa">Pessoa</a></li><li><a href="#Empresa">Empresa</a></li></ul>
+            
+            <h3>Interfaces</h3>
+            <ul><li><a href="#IPessoa">IPessoa</a></li></ul>
+            
+            <h3>Functions</h3>
+            <ul><li><a href="#getName">getName</a></li><li><a href="#getName">getName</a></li><li><a href="#getAge">getAge</a></li><li><a href="#apresentar">apresentar</a></li><li><a href="#constructor">constructor</a></li><li><a href="#adicionarFuncionario">adicionarFuncionario</a></li><li><a href="#totalFuncionarios">totalFuncionarios</a></li><li><a href="#saudacao">saudacao</a></li></ul>
+        </aside>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <header>
+                <h1>Fixed Documentation</h1>
+                <p>Project Documentation</p>
+            </header>
+            
+            <div class="breadcrumb">
+                <span>Home</span>
+                <span>·</span>
+                <span>Documentation</span>
+            </div>
+            
+            <nav>
+                <a href="#classes">Classes</a>
+                <a href="#interfaces">Interfaces</a>
+                <a href="#functions">Functions</a>
+                <a href="#imports">Imports</a>
+            </nav>
+            
+            <main>
+                <div class="toc"><h3>Contents</h3><ul><li><a href="#Pessoa">Pessoa (class)</a></li><li><a href="#Empresa">Empresa (class)</a></li><li><a href="#IPessoa">IPessoa (interface)</a></li><li><a href="#getName">getName() (function)</a></li><li><a href="#getName">getName() (function)</a></li><li><a href="#getAge">getAge() (function)</a></li><li><a href="#apresentar">apresentar() (function)</a></li><li><a href="#constructor">constructor() (function)</a></li><li><a href="#adicionarFuncionario">adicionarFuncionario() (function)</a></li><li><a href="#totalFuncionarios">totalFuncionarios() (function)</a></li><li><a href="#saudacao">saudacao() (function)</a></li></ul></div>
+                <section id="classes"><h2>Classes</h2><div class="class-box" id="Pessoa"><div class="member-header"><h3>Pessoa</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 9</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>interface IPessoa {
+    intent getName(): string
+    intent getAge(): int
+}
+
+class Pessoa implements IPessoa {
+    &quot;&quot;&quot;Classe que representa uma pessoa&quot;&quot;&quot;
+    
+    private var name: string</code></pre>
+        </div><div class="hierarchy"><strong>Implements:</strong><br><div class="hierarchy-item implements">IPessoa</div></div><h4>Members</h4><h5>Campos</h5><ul class="member-list"><li class="field"><strong>name</strong> <span class="param-type">string</span></li><li class="field private"><strong>age</strong> <span class="param-type">int</span><span class="private-indicator">private</span></li><li class="field private"><strong>email</strong> <span class="param-type">string</span><span class="private-indicator">private</span></li></ul><h5>Métodos</h5><ul class="member-list"><li class="method private"><strong>constructor</strong>(name: string, age: int...)<span class="private-indicator">private</span></li><li class="method"><strong>getName</strong> <span class="param-type">→ string</span></li><li class="method"><strong>getAge</strong> <span class="param-type">→ int</span></li><li class="method"><strong>apresentar</strong> <span class="param-type">→ string</span></li></ul></div><div class="class-box" id="Empresa"><div class="member-header"><h3>Empresa</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 45</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        &quot;&quot;&quot;Gera uma apresentação da pessoa&quot;&quot;&quot;
+        return f&quot;Olá, sou {this.name} e tenho {this.age} anos&quot;
+    }
+}
+
+class Empresa {
+    &quot;&quot;&quot;Classe que representa uma empresa&quot;&quot;&quot;
+    
+    private var cnpj: string</code></pre>
+        </div><h4>Members</h4><h5>Campos</h5><ul class="member-list"><li class="field"><strong>cnpj</strong> <span class="param-type">string</span></li><li class="field private"><strong>nome</strong> <span class="param-type">string</span><span class="private-indicator">private</span></li><li class="field private"><strong>funcionarios</strong> <span class="param-type">list</span><span class="private-indicator">private</span></li></ul><h5>Métodos</h5><ul class="member-list"><li class="method private"><strong>constructor</strong>(nome: string, cnpj: string)<span class="private-indicator">private</span></li><li class="method"><strong>adicionarFuncionario</strong>(pessoa: Pessoa) <span class="param-type">→ void</span></li><li class="method"><strong>totalFuncionarios</strong> <span class="param-type">→ int</span></li></ul></div></section>
+                <section id="interfaces"><h2>Interfaces</h2><div class="interface-box" id="IPessoa"><div class="member-header"><h3>IPessoa</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 1</span></div><p class="docstring">Main module de demonstração para documentação
+Este arquivo demonstra como o gerador de docs funciona</p><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>&quot;&quot;&quot;
+Main module de demonstração para documentação
+Este arquivo demonstra como o gerador de docs funciona
+&quot;&quot;&quot;
+
+interface IPessoa {
+    intent getName(): string
+    intent getAge(): int
+}</code></pre>
+        </div></div></section>
+                <section id="functions"><h2>Functions</h2><div class="function-box" id="getName"><div class="member-header"><h3>getName</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 6</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>Este arquivo demonstra como o gerador de docs funciona
+&quot;&quot;&quot;
+
+interface IPessoa {
+    intent getName(): string
+    intent getAge(): int
+}
+
+class Pessoa implements IPessoa {
+    &quot;&quot;&quot;Classe que representa uma pessoa&quot;&quot;&quot;
+    
+    private var name: string
+    private var age: int
+    var email: string
+    
+    intent constructor(name: string, age: int, email: string = &quot;&quot;) {
+        &quot;&quot;&quot;Cria uma nova instância de Pessoa
+        
+        Parâmetros:</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">getName(): string
+    intent getAge(), age: int, email: string): void</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">)</span> <span class="param-type">string
+    intent getAge()</span></div><div class="parameter"><span class="param-name">age</span> <span class="param-type">int</span></div><div class="parameter"><span class="param-name">email</span> <span class="param-type">string</span> <span class="param-default">= ""</span></div></div><div class="function-box" id="getName"><div class="member-header"><h3>getName</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 29</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        this.name = name
+        this.age = age
+        this.email = email
+    }
+    
+    intent getName(): string {
+        &quot;&quot;&quot;Retorna o nome da pessoa&quot;&quot;&quot;
+        return this.name
+    }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">getName(): string</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="getAge"><div class="member-header"><h3>getAge</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 34</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>    intent getName(): string {
+        &quot;&quot;&quot;Retorna o nome da pessoa&quot;&quot;&quot;
+        return this.name
+    }
+    
+    intent getAge(): int {
+        &quot;&quot;&quot;Retorna a idade da pessoa&quot;&quot;&quot;
+        return this.age
+    }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">getAge(): int</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">int</span></div></div><div class="function-box" id="apresentar"><div class="member-header"><h3>apresentar</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 39</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>    intent getAge(): int {
+        &quot;&quot;&quot;Retorna a idade da pessoa&quot;&quot;&quot;
+        return this.age
+    }
+    
+    intent apresentar(): string {
+        &quot;&quot;&quot;Gera uma apresentação da pessoa&quot;&quot;&quot;
+        return f&quot;Olá, sou {this.name} e tenho {this.age} anos&quot;
+    }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">apresentar(): string</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div><div class="function-box" id="constructor"><div class="member-header"><h3>constructor</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 52</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>    
+    private var cnpj: string
+    var nome: string
+    var funcionarios: list = null
+    
+    intent constructor(nome: string, cnpj: string) {
+        &quot;&quot;&quot;Inicializa uma nova empresa
+        
+        Parâmetros:</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">constructor(nome: string, cnpj: string): void</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">nome</span> <span class="param-type">string</span></div><div class="parameter"><span class="param-name">cnpj</span> <span class="param-type">string</span></div></div><div class="function-box" id="adicionarFuncionario"><div class="member-header"><h3>adicionarFuncionario</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 64</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        this.nome = nome
+        this.cnpj = cnpj
+        this.funcionarios = []
+    }
+    
+    intent adicionarFuncionario(pessoa: Pessoa): void {
+        &quot;&quot;&quot;Adiciona um funcionário à empresa&quot;&quot;&quot;
+        this.funcionarios.append(pessoa)
+    }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">adicionarFuncionario(pessoa: Pessoa): void</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">pessoa</span> <span class="param-type">Pessoa</span></div></div><div class="function-box" id="totalFuncionarios"><div class="member-header"><h3>totalFuncionarios</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 69</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>    intent adicionarFuncionario(pessoa: Pessoa): void {
+        &quot;&quot;&quot;Adiciona um funcionário à empresa&quot;&quot;&quot;
+        this.funcionarios.append(pessoa)
+    }
+    
+    intent totalFuncionarios(): int {
+        &quot;&quot;&quot;Retorna o número total de funcionários&quot;&quot;&quot;
+        return len(this.funcionarios)
+    }</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">totalFuncionarios(): int</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">int</span></div></div><div class="function-box" id="saudacao"><div class="member-header"><h3>saudacao</h3></div><div class="location"><strong>Location:</strong> <code>main.mp</code> <span class="line-number">Line 75</span></div><div class="code-block">
+        <div class="code-header">Source Code</div>
+        <pre><code>        &quot;&quot;&quot;Retorna o número total de funcionários&quot;&quot;&quot;
+        return len(this.funcionarios)
+    }
+}
+
+intent saudacao(nome: string, pronome: string = &quot;você&quot;): string {
+    &quot;&quot;&quot;Função que gera uma saudação
+    
+    Parâmetros:</code></pre>
+        </div><div class="signature"><span class="keyword">intent</span> <span class="type">saudacao(nome: string, pronome: string): string</span></div><h4>Parameters</h4><div class="parameter"><span class="param-name">nome</span> <span class="param-type">string</span></div><div class="parameter"><span class="param-name">pronome</span> <span class="param-type">string</span> <span class="param-default">= "você"</span></div><h4>Returns</h4><div class="parameter"><span class="param-type">string</span></div></div></section>
+            </main>
+            
+            <footer>
+                <p>Generated by CorpLang Documentation Generator</p>
+                <p><section id="imports"><h2>Imports</h2><p>No imports found.</p></section></p>
+            </footer>
+        </div>
+    </div>
+</body>
+</html>

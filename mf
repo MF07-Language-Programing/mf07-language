@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""
+Corplang CLI Wrapper - Easy execution script
+
+Place this in /usr/local/bin/mf (on Unix) or %PATH% (on Windows) to use globally.
+
+Usage:
+    chmod +x mf
+    sudo ln -s $(pwd)/mf /usr/local/bin/mf
+    mf run program.mp
+    mf compile main.mp
+    mf init myproject
+    mf version
+"""
+
+import sys
+from pathlib import Path
+
+# Find workspace root
+script_dir = Path(__file__).parent.resolve()
+workspace_root = script_dir.parent if script_dir.name == "scripts" else script_dir
+
+# Add workspace to path
+sys.path.insert(0, str(workspace_root))
+
+from src.commands.main import main
+
+if __name__ == "__main__":
+    main()
