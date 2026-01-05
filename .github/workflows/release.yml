@@ -2,14 +2,13 @@ name: Release & Publish
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release (e.g., 1.2.3)'
-        required: true
-        type: string
+    branches:
+      - main
+    paths:
+      - 'pyproject.toml'
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -17,38 +16,34 @@ permissions:
   id-token: write
 
 jobs:
-  validate:
-    name: Validate Release
+  detect-version:
+    name: Detect Version Change
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.extract.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
+      version-changed: ${{ steps.version.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Extract version
-        id: extract
+      - name: Extract version from pyproject.toml
+        id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            VERSION="${{ inputs.version }}"
-          else
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          fi
+          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/version = "\([^"]*\)".*/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Releasing version: $VERSION"
-
-      - name: Validate version format
-        run: |
-          VERSION="${{ steps.extract.outputs.version }}"
-          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
-            echo "Invalid version format: $VERSION"
-            exit 1
+          
+          if git describe --tags --exact-match "v$VERSION" 2>/dev/null; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
+          
+          echo "Current version: $VERSION"
 
   test:
     name: Run Tests
-    needs: validate
+    needs: detect-version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +73,8 @@ jobs:
 
   build:
     name: Build Distribution
-    needs: [validate, test]
+    needs: [detect-version, test]
+    if: needs.detect-version.outputs.version-changed == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,7 +86,7 @@ jobs:
 
       - name: Create distribution package
         run: |
-          VERSION="${{ needs.validate.outputs.version }}"
+          VERSION="${{ needs.detect-version.outputs.version }}"
           DIST_DIR="dist"
           mkdir -p "$DIST_DIR"
           
@@ -126,7 +122,7 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [validate, build]
+    needs: [detect-version, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -142,7 +138,7 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          VERSION="${{ needs.validate.outputs.version }}"
+          VERSION="${{ needs.detect-version.outputs.version }}"
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           
           if [ -n "$PREV_TAG" ]; then
@@ -173,18 +169,18 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ needs.validate.outputs.version }}
-          name: Release v${{ needs.validate.outputs.version }}
+          tag_name: v${{ needs.detect-version.outputs.version }}
+          name: Release v${{ needs.detect-version.outputs.version }}
           body_path: release_notes.md
           files: dist/*
           draft: false
-          prerelease: ${{ contains(needs.validate.outputs.version, '-') }}
+          prerelease: ${{ contains(needs.detect-version.outputs.version, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   update-docs:
     name: Update Documentation
-    needs: [validate, create-release]
+    needs: [detect-version, create-release]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -194,7 +190,7 @@ jobs:
 
       - name: Update version in docs
         run: |
-          VERSION="${{ needs.validate.outputs.version }}"
+          VERSION="${{ needs.detect-version.outputs.version }}"
           find docs -type f -name "*.md" -exec sed -i "s/version: [0-9.]\+/version: $VERSION/g" {} +
           
           if git diff --quiet; then
@@ -209,7 +205,7 @@ jobs:
 
   deploy-pages:
     name: Deploy GitHub Pages
-    needs: [validate, create-release]
+    needs: [detect-version, create-release]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -222,7 +218,7 @@ jobs:
       - name: Prepare public site
         run: |
           DEPLOY_DIR="public-deploy"
-          VERSION="${{ needs.validate.outputs.version }}"
+          VERSION="${{ needs.detect-version.outputs.version }}"
           mkdir -p "$DEPLOY_DIR"
           
           # Update version in public assets
@@ -244,13 +240,13 @@ jobs:
 
   notify:
     name: Notify Release
-    needs: [validate, create-release]
+    needs: [detect-version, create-release]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Report status
         run: |
-          VERSION="${{ needs.validate.outputs.version }}"
+          VERSION="${{ needs.detect-version.outputs.version }}"
           if [ "${{ needs.create-release.result }}" = "success" ]; then
             echo "✓ Successfully released version $VERSION"
             echo "  GitHub: https://github.com/${{ github.repository }}/releases/tag/v$VERSION"

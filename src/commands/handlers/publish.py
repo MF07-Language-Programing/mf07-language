@@ -10,22 +10,20 @@ from src.commands.utils.versioning import (
     get_current_version,
     update_version_in_file,
     detect_bump_type_from_commits,
-    create_git_tag,
 )
 
 
 def handle_publish(args) -> CLIResult:
     """
-    Automate version bump, branch creation, and CI/CD trigger.
+    Create release branch with version bump.
     
     Workflow:
     1. Detect or use specified bump type (major/minor/patch)
-    2. Calculate a new version
-    3. Create a release branch
+    2. Calculate new version
+    3. Create release branch
     4. Update version in pyproject.toml
     5. Commit changes
-    6. Create and push git tag
-    7. Trigger CI/CD via tag push
+    6. Push branch to remote (GitHub Actions will handle tag/release)
     """
     try:
         root = Path.cwd()
@@ -74,20 +72,11 @@ def handle_publish(args) -> CLIResult:
                 message="Failed to commit version changes"
             )
 
-        Output.info("Creating git tag...")
-        tag = f"v{new_version}"
-        if not create_git_tag(new_version, args.message or f"Release {tag}"):
-            _cleanup_branch(branch_name)
-            return CLIResult(
-                success=False,
-                message="Failed to create git tag"
-            )
-
         if not args.skip_push:
-            Output.info("Pushing branch and tag to remote...")
-            if not _push_branch_and_tag(branch_name, tag):
-                Output.warning("Push failed. Branch and tag created locally.")
-                Output.info(f"Run manually: git push -u origin {branch_name} && git push origin {tag}")
+            Output.info("Pushing branch to remote...")
+            if not _push_branch(branch_name):
+                Output.warning("Push failed. Branch created locally.")
+                Output.info(f"Run manually: git push -u origin {branch_name}")
                 return CLIResult(
                     success=True,
                     message=f"Version {new_version} prepared locally. Manual push required."
@@ -95,16 +84,11 @@ def handle_publish(args) -> CLIResult:
 
         Output.success(f"✓ Version {new_version} published successfully!")
         Output.info(f"  Branch: {branch_name}")
-        Output.info(f"  Tag: {tag}")
-        Output.info(f"  CI/CD triggered automatically")
-
-        if not args.skip_push:
-            Output.info(f"\nMonitor release: https://github.com/<owner>/<repo>/actions")
+        Output.info(f"  Next: Create PR to main → GitHub Actions will handle tag & release")
 
         return CLIResult(
             success=True,
-            message=f"Published version {new_version}",
-            data={"version": str(new_version), "branch": branch_name, "tag": tag}
+            message=f"Published version {new_version} on branch {branch_name}"
         )
 
     except Exception as e:
@@ -173,16 +157,11 @@ def _commit_version_bump(version: Version) -> bool:
         return False
 
 
-def _push_branch_and_tag(branch: str, tag: str) -> bool:
-    """Push branch and tag to remote."""
+def _push_branch(branch: str) -> bool:
+    """Push branch to remote."""
     try:
         subprocess.run(
             ["git", "push", "-u", "origin", branch],
-            check=True,
-            capture_output=True
-        )
-        subprocess.run(
-            ["git", "push", "origin", tag],
             check=True,
             capture_output=True
         )
