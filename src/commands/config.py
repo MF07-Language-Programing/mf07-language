@@ -22,6 +22,11 @@ class CorplangConfig:
     def get_project_root(start_path: str = ".") -> Optional[Path]:
         """Find the project root by looking for language_config.yaml or manifest.json."""
         current = Path(start_path).resolve()
+        
+        # If start_path is a file, start from its parent directory
+        if current.is_file():
+            current = current.parent
+        
         for _ in range(10):
             if (current / CorplangConfig.CONFIG_FILE).exists() or \
                     (current / CorplangConfig.MANIFEST_FILE).exists():
