@@ -13,7 +13,7 @@ set -e
 REPO_OWNER="${MF_REPO_OWNER:-MF07-Language-Programing}"
 REPO_NAME="${MF_REPO_NAME:-mf07-language}"
 INSTALL_DIR="${MF_INSTALL_DIR:-$HOME/.corplang}"
-BIN_DIR="$INSTALL_DIR/bin"
+BIN_DIR="$INSTALL_DIR"
 VERSION="${MF_VERSION:-latest}"
 PYTHON_CMD=""
 
@@ -269,127 +269,52 @@ except: pass
     log_info "Target version: $VERSION"
 }
 
-install_via_pip() {
-    log_step "Installing mf07-language from source..."
+install_mf_binary() {
+    log_step "Downloading mf CLI binary..."
     
-    local tmp_dir=$(mktemp -d)
-    cd "$tmp_dir"
+    mkdir -p "$INSTALL_DIR"
     
     local repo_url="https://github.com/$REPO_OWNER/$REPO_NAME"
+    local release_url="$repo_url/releases/download/v$VERSION/mf"
     
-    if [ "$VERSION" = "latest" ]; then
-        log_info "Cloning main branch..."
-        git clone --depth 1 "$repo_url.git" mf07 || {
-            log_error "Failed to clone repository"
+    local mf_binary="$INSTALL_DIR/mf"
+    
+    log_info "Downloading from: $release_url"
+    
+    if command -v curl &> /dev/null; then
+        curl -fsSL "$release_url" -o "$mf_binary" || {
+            log_error "Failed to download mf binary"
+            exit 1
+        }
+    elif command -v wget &> /dev/null; then
+        wget -qO "$mf_binary" "$release_url" || {
+            log_error "Failed to download mf binary"
             exit 1
         }
     else
-        log_info "Downloading version $VERSION..."
-        if command -v curl &> /dev/null; then
-            curl -fsSL "$repo_url/archive/refs/tags/v$VERSION.tar.gz" | tar xz
-        elif command -v wget &> /dev/null; then
-            wget -qO- "$repo_url/archive/refs/tags/v$VERSION.tar.gz" | tar xz
-        else
-            log_error "curl or wget required"
-            exit 1
-        fi
-        
-        cd "mf07-language-$VERSION" 2>/dev/null || {
-            log_error "Failed to extract archive"
-            exit 1
-        }
+        log_error "curl or wget required"
+        exit 1
     fi
     
-    cd mf07* 2>/dev/null || true
-
-    # Run pip as invoking user (when sudo) to avoid system-wide install
-    local py_cmd="$PYTHON_CMD"
-    local pip_cmd=("$py_cmd" -m pip)
-    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
-        pip_cmd=(sudo -u "$SUDO_USER" -E "$py_cmd" -m pip)
-    fi
-
-    # Try user install with break-system-packages; fallback to venv if still blocked
-    if ! PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_BREAK_SYSTEM_PACKAGES=1 "${pip_cmd[@]}" install --user --break-system-packages -e . 2>/dev/null; then
-        if ! PIP_DISABLE_PIP_VERSION_CHECK=1 "${pip_cmd[@]}" install --user -e . 2>/dev/null; then
-            log_warn "User install blocked by PEP 668. Falling back to isolated venv with python3.14."
-            local VENV_DIR="$HOME/.local/share/mf07-language-venv"
-
-            if ! "$py_cmd" -m venv "$VENV_DIR" >/dev/null 2>&1; then
-                log_error "Failed to create venv with python3.14 (ensure python3.14-venv is installed)"
-                exit 1
-            fi
-
-            # Ensure pip exists even if ensurepip under-delivers
-            if [ ! -x "$VENV_DIR/bin/pip" ]; then
-                local GET_PIP="$VENV_DIR/get-pip.py"
-                if command -v curl >/dev/null 2>&1; then
-                    curl -fsSL https://bootstrap.pypa.io/get-pip.py -o "$GET_PIP"
-                elif command -v wget >/dev/null 2>&1; then
-                    wget -qO "$GET_PIP" https://bootstrap.pypa.io/get-pip.py
-                else
-                    log_error "curl or wget required to bootstrap pip"
-                    exit 1
-                fi
-                "$VENV_DIR/bin/python" "$GET_PIP" >/dev/null 2>&1 || { log_error "Failed to bootstrap pip"; exit 1; }
-                rm -f "$GET_PIP"
-            fi
-
-            "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
-            "$VENV_DIR/bin/pip" install -e . || { log_error "Venv install failed"; exit 1; }
-            mkdir -p "$BIN_DIR"
-            ln -sf "$VENV_DIR/bin/mf" "$BIN_DIR/mf"
-            log_info "Installed in isolated venv at $VENV_DIR"
-            cd - > /dev/null
-            rm -rf "$tmp_dir"
-            log_info "Installed mf07-language $VERSION"
-            return
-        fi
-    fi
-    
-    cd - > /dev/null
-    rm -rf "$tmp_dir"
-    
-    log_info "Installed mf07-language $VERSION"
+    chmod +x "$mf_binary"
+    log_info "✓ mf binary downloaded and installed at: $mf_binary"
 }
 
-setup_binary_symlink() {
-    log_step "Setting up CLI binary..."
+verify_binary() {
+    log_step "Verifying binary..."
     
-    mkdir -p "$BIN_DIR"
+    local mf_binary="$INSTALL_DIR/mf"
     
-    # Check if already installed in venv (from fallback path)
-    local VENV_DIR="$HOME/.local/share/mf07-language-venv"
-    if [ -f "$VENV_DIR/bin/mf" ]; then
-        ln -sf "$VENV_DIR/bin/mf" "$BIN_DIR/mf" 2>/dev/null || {
-            cp "$VENV_DIR/bin/mf" "$BIN_DIR/mf"
-            chmod +x "$BIN_DIR/mf"
-        }
-        log_info "✓ CLI executable installed at: $BIN_DIR/mf"
-        return
+    if [ ! -f "$mf_binary" ]; then
+        log_error "mf binary not found at $mf_binary"
+        exit 1
     fi
     
-    # Otherwise check user site packages
-    local python_bin_dir
-    python_bin_dir=$("$PYTHON_CMD" -c "import site; print(site.USER_BASE + '/bin')" 2>/dev/null || echo "")
-    
-    if [ -n "$python_bin_dir" ] && [ -f "$python_bin_dir/mf" ]; then
-        ln -sf "$python_bin_dir/mf" "$BIN_DIR/mf" 2>/dev/null || {
-            cp "$python_bin_dir/mf" "$BIN_DIR/mf"
-            chmod +x "$BIN_DIR/mf"
-        }
-        log_info "✓ CLI executable installed at: $BIN_DIR/mf"
-        return
+    if [ ! -x "$mf_binary" ]; then
+        chmod +x "$mf_binary"
     fi
     
-    # Create wrapper script as fallback
-    log_info "Creating CLI wrapper script..."
-    cat > "$BIN_DIR/mf" << EOF
-#!/usr/bin/env bash
-exec "$PYTHON_CMD" -m src.commands "\$@"
-EOF
-    chmod +x "$BIN_DIR/mf"
-    log_info "✓ CLI executable installed at: $BIN_DIR/mf"
+    log_info "✓ Binary verified at: $mf_binary"
 }
 
 setup_shell_profile() {
@@ -417,7 +342,7 @@ setup_shell_profile() {
             ;;
     esac
     
-    local path_export="export PATH=\"\$PATH:$BIN_DIR\""
+    local path_export="export PATH=\"$INSTALL_DIR:\$PATH\""
     
     if ! grep -q "$BIN_DIR" "$shell_profile" 2>/dev/null; then
         echo "" >> "$shell_profile"
@@ -434,7 +359,7 @@ setup_shell_profile() {
 verify_installation() {
     log_step "Verifying installation..."
     
-    export PATH="$PATH:$BIN_DIR"
+    export PATH="$INSTALL_DIR:$PATH"
     
     if command -v mf &> /dev/null; then
         local installed_version
@@ -494,8 +419,8 @@ main() {
         get_latest_version
     fi
     
-    install_via_pip
-    setup_binary_symlink
+    install_mf_binary
+    verify_binary
     setup_shell_profile
     verify_installation
     cleanup
