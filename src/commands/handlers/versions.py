@@ -121,6 +121,8 @@ def set_version(version: str) -> CLIResult:
 
     if vm.set_active_version(version):
         Output.success(f"Active version set to {version}")
+        Output.info("Environment variable CORPLANG_ACTIVE_VERSION has been set")
+        Output.warning("Restart your shell or run: source ~/.bashrc (or ~/.zshrc)")
         return CLIResult(success=True, message=f"Version {version} is now active")
     else:
         return CLIResult(

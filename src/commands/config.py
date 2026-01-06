@@ -479,7 +479,12 @@ class VersionManager:
         if version not in versions:
             return False
 
+        # Set for current process
         os.environ["CORPLANG_ACTIVE_VERSION"] = version
+        
+        # Persist to shell config
+        self._persist_env_var("CORPLANG_ACTIVE_VERSION", version)
+        
         self.log_action("SET_ACTIVE", version, "SUCCESS")
 
         project_root = CorplangConfig.get_project_root()
@@ -496,6 +501,42 @@ class VersionManager:
             except Exception:
                 pass
 
+        return True
+    
+    def _persist_env_var(self, var_name: str, value: str) -> bool:
+        """Persist environment variable to shell config."""
+        import sys
+        
+        home = Path.home()
+        shell_configs = []
+        
+        # Determine which shell configs to update
+        if sys.platform.startswith("linux") or sys.platform == "darwin":
+            shell_configs = [
+                home / ".bashrc",
+                home / ".bash_profile",
+                home / ".zshrc",
+                home / ".profile",
+            ]
+        
+        export_line = f'export {var_name}="{value}"\n'
+        
+        for config_file in shell_configs:
+            if config_file.exists():
+                try:
+                    content = config_file.read_text()
+                    
+                    # Remove old entries
+                    lines = content.split("\n")
+                    filtered = [l for l in lines if not l.startswith(f"export {var_name}=")]
+                    
+                    # Add new entry at the end
+                    filtered.append(export_line.rstrip())
+                    
+                    config_file.write_text("\n".join(filtered))
+                except Exception:
+                    continue
+        
         return True
 
 
