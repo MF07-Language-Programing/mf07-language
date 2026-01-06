@@ -61,6 +61,9 @@ out/
 __pycache__/
 *.py[cod]
 *$py.class
+# Explicit ignores for compiled artifacts inside src (prevents publish noise)
+src/corplang/**/__pycache__/
+src/corplang/**/*.pyc
 
 # C extensions
 *.so
