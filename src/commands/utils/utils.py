@@ -59,6 +59,10 @@ class Output:
         print(f"\n{Colors.BOLD}{Colors.BLUE}{title}{Colors.RESET}")
 
     @staticmethod
+    def step(msg: str):
+        print(f"{Colors.BOLD}==>{Colors.RESET} {msg}")
+
+    @staticmethod
     def print(msg: str = ""):
         print(msg)
 

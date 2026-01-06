@@ -263,6 +263,20 @@ mf versions list
 mf versions set 0.2.0
 ```
 
+### Desinstalar Corplang
+```bash
+# Remover completamente do sistema
+mf uninstall
+
+# Desinstalação não-interativa
+mf uninstall --yes
+
+# Via script standalone
+curl -fsSL https://raw.githubusercontent.com/MF07-Language-Programing/mf07-language/main/uninstall.sh | bash
+```
+
+Para mais detalhes, consulte [docs/UNINSTALL_GUIDE.md](docs/UNINSTALL_GUIDE.md).
+
 ## Troubleshooting
 
 ### "No versions installed"

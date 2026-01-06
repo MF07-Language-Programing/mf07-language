@@ -8,7 +8,7 @@ import argparse
 
 from src.commands.config import CorplangConfig
 from src.commands.utils.utils import Output, Colors, CLIResult
-from src.commands.handlers import compile, run, init, version, versions, env, build, db, docs, repl, publish
+from src.commands.handlers import compile, run, init, version, versions, env, build, db, docs, repl, publish, uninstall
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -54,6 +54,7 @@ For more information, visit https://github.com/MF07-Language-Programing/mf07-lan
     create_db_parser(subparsers)
     create_docs_parser(subparsers)
     create_publish_parser(subparsers)
+    create_uninstall_parser(subparsers)
 
     return parser
 
@@ -360,6 +361,30 @@ def create_publish_parser(subparsers) -> argparse.ArgumentParser:
     )
 
     parser.set_defaults(handler=publish.handle_publish)
+    return parser
+
+
+def create_uninstall_parser(subparsers) -> argparse.ArgumentParser:
+    """Create parser for 'uninstall' command."""
+    parser = subparsers.add_parser(
+        "uninstall",
+        help="Uninstall Corplang from your system",
+        description="Remove Corplang CLI, versions, and configuration from your system",
+    )
+
+    parser.add_argument(
+        "--yes", "-y",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+
+    parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Force removal even if directory structure looks unexpected",
+    )
+
+    parser.set_defaults(handler=uninstall.handle_uninstall)
     return parser
 
 

@@ -16,10 +16,10 @@ from src.commands.utils.utils import (
 
 
 def run_file(
-    file_path: str,
-    project_root: Optional[Path] = None,
-    verbose: bool = False,
-    strict: bool = False,
+        file_path: str,
+        project_root: Optional[Path] = None,
+        verbose: bool = False,
+        strict: bool = False,
 ) -> CLIResult:
     """Execute a .mp file."""
     valid, error_msg = FileValidator.validate_corplang_file(file_path)
