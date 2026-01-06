@@ -15,19 +15,21 @@ from src.commands.utils.versioning import (
 
 def handle_publish(args) -> CLIResult:
     """
-    Create release branch with version bump.
+    Publish new version with automated commits.
     
     Workflow:
     1. Detect or use specified bump type (major/minor/patch)
     2. Calculate new version
-    3. Create release branch
-    4. Update version in pyproject.toml
-    5. Commit changes
-    6. Push branch to remote (GitHub Actions will handle tag/release)
+    3. Update pyproject.toml version (language/package version)
+    4. Commit pyproject.toml changes
+    5. Update CLI version (src/commands/config.py)
+    6. Commit CLI version separately
+    7. Push to main branch
     """
     try:
         root = Path.cwd()
         pyproject = root / "pyproject.toml"
+        cli_config = root / "src/commands/config.py"
 
         if not pyproject.exists():
             return CLIResult(
@@ -46,49 +48,62 @@ def handle_publish(args) -> CLIResult:
         if not args.yes and not _confirm(f"Publish version {new_version}?"):
             return CLIResult(success=False, message="Publish cancelled by user")
 
-        branch_name = f"release/v{new_version}"
-
         if not _ensure_clean_working_tree():
             return CLIResult(
                 success=False,
                 message="Working tree has uncommitted changes. Commit or stash them first."
             )
 
-        Output.info("Creating release branch...")
-        if not _create_branch(branch_name):
-            return CLIResult(
-                success=False,
-                message=f"Failed to create branch {branch_name}"
-            )
-
-        Output.info("Updating version in pyproject.toml...")
+        Output.step("Updating pyproject.toml version...")
         update_version_in_file(pyproject, new_version)
 
-        Output.info("Committing version bump...")
-        if not _commit_version_bump(new_version):
-            _cleanup_branch(branch_name)
+        Output.info("Committing pyproject.toml...")
+        if not _commit_file(pyproject, f"chore: bump language version to {new_version}"):
             return CLIResult(
                 success=False,
-                message="Failed to commit version changes"
+                message="Failed to commit pyproject.toml"
+            )
+        Output.success(f"✓ Committed pyproject.toml ({new_version})")
+
+        # Update CLI version separately
+        Output.step("Updating CLI version...")
+        if not _update_cli_version(cli_config, new_version):
+            return CLIResult(
+                success=False,
+                message="Failed to update CLI version in config.py"
             )
 
+        Output.info("Committing CLI version...")
+        if not _commit_file(cli_config, f"chore: bump CLI version to {new_version}"):
+            return CLIResult(
+                success=False,
+                message="Failed to commit config.py"
+            )
+        Output.success(f"✓ Committed CLI version ({new_version})")
+
+        # Push to main
         if not args.skip_push:
-            Output.info("Pushing branch to remote...")
-            if not _push_branch(branch_name):
-                Output.warning("Push failed. Branch created locally.")
-                Output.info(f"Run manually: git push -u origin {branch_name}")
+            Output.info("Pushing to main...")
+            if not _push_to_main():
+                Output.warning("Push failed. Changes committed locally.")
+                Output.info("Run manually: git push origin main")
                 return CLIResult(
                     success=True,
-                    message=f"Version {new_version} prepared locally. Manual push required."
+                    message=f"Version {new_version} committed locally. Manual push required."
                 )
 
         Output.success(f"✓ Version {new_version} published successfully!")
-        Output.info(f"  Branch: {branch_name}")
-        Output.info(f"  Next: Create PR to main → GitHub Actions will handle tag & release")
+        Output.info(f"  - pyproject.toml: {new_version}")
+        Output.info(f"  - CLI version: {new_version}")
+        Output.info(f"  - Branch: main")
+
+        # Show version check
+        Output.step("Verifying installation...")
+        _check_cli_version()
 
         return CLIResult(
             success=True,
-            message=f"Published version {new_version} on branch {branch_name}"
+            message=f"Published version {new_version}"
         )
 
     except Exception as e:
@@ -126,11 +141,16 @@ def _ensure_clean_working_tree() -> bool:
         return False
 
 
-def _create_branch(branch_name: str) -> bool:
-    """Create and checkout new branch."""
+def _commit_file(file_path: Path, message: str) -> bool:
+    """Commit a specific file with message."""
     try:
         subprocess.run(
-            ["git", "checkout", "-b", branch_name],
+            ["git", "add", str(file_path)],
+            check=True,
+            capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", message],
             check=True,
             capture_output=True
         )
@@ -139,16 +159,28 @@ def _create_branch(branch_name: str) -> bool:
         return False
 
 
-def _commit_version_bump(version: Version) -> bool:
-    """Commit version changes."""
+def _update_cli_version(config_file: Path, version: Version) -> bool:
+    """Update VERSION in src/commands/config.py"""
+    try:
+        content = config_file.read_text()
+        # Replace VERSION = "x.y.z" with new version
+        import re
+        new_content = re.sub(
+            r'VERSION = "[^"]+"',
+            f'VERSION = "{version}"',
+            content
+        )
+        config_file.write_text(new_content)
+        return True
+    except Exception:
+        return False
+
+
+def _push_to_main() -> bool:
+    """Push to main branch."""
     try:
         subprocess.run(
-            ["git", "add", "pyproject.toml"],
-            check=True,
-            capture_output=True
-        )
-        subprocess.run(
-            ["git", "commit", "-m", f"chore: bump version to {version}"],
+            ["git", "push", "origin", "main"],
             check=True,
             capture_output=True
         )
@@ -157,24 +189,17 @@ def _commit_version_bump(version: Version) -> bool:
         return False
 
 
-def _push_branch(branch: str) -> bool:
-    """Push branch to remote."""
+def _check_cli_version() -> None:
+    """Check and display CLI version."""
     try:
-        subprocess.run(
-            ["git", "push", "-u", "origin", branch],
-            check=True,
-            capture_output=True
+        result = subprocess.run(
+            ["./mf", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5
         )
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
-
-def _cleanup_branch(branch: str) -> None:
-    """Cleanup failed branch."""
-    try:
-        subprocess.run(["git", "checkout", "-"], check=False, capture_output=True)
-        subprocess.run(["git", "branch", "-D", branch], check=False, capture_output=True)
+        if result.returncode == 0:
+            Output.info(f"CLI version: {result.stdout.strip()}")
     except Exception:
         pass
 
