@@ -149,7 +149,7 @@ export GH_TOKEN=ghp_your_token_here
 
 ### Endpoints Utilizados
 
-- **List Releases**: `GET /repos/MF07-Language-Programing/mf07-core-compiler/releases`
+- **List Releases**: `GET /repos/MF07-Language-Programing/mf07-language/releases`
 - **Rate Limit**: 60 req/hora (sem token), 5000 req/hora (com token)
 
 ### Estrutura de Release

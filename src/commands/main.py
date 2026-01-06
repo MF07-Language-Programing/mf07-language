@@ -25,7 +25,7 @@ Examples:
   mf init myproject           # Create a new project
   mf version --verbose        # Show version details
 
-For more information, visit https://github.com/MF07-Language-Programing/mf07-core-compiler
+For more information, visit https://github.com/MF07-Language-Programing/mf07-language
 """,
     )
 

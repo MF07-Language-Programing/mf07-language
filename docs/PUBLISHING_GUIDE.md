@@ -99,20 +99,20 @@ git push origin v1.2.3
 
 **Linux / macOS:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MF07-Language-Programing/mf07-core-compiler/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/MF07-Language-Programing/mf07-language/main/install.sh | bash
 ```
 
 **Windows (Git Bash / WSL):**
 ```bash
-wget -qO- https://raw.githubusercontent.com/MF07-Language-Programing/mf07-core-compiler/main/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/MF07-Language-Programing/mf07-language/main/install.sh | bash
 ```
 
 ### Manual Install via pip
 
 ```bash
 # Install from source
-git clone https://github.com/MF07-Language-Programing/mf07-core-compiler.git
-cd mf07-core-compiler
+git clone https://github.com/MF07-Language-Programing/mf07-language.git
+cd mf07-language
 pip install -e .
 ```
 
@@ -208,7 +208,7 @@ git push origin v1.0.0-beta.1
 ```bash
 # Install specific version from GitHub
 export MF_VERSION=0.9.0
-curl -fsSL https://raw.githubusercontent.com/MF07-Language-Programing/mf07-core-compiler/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/MF07-Language-Programing/mf07-language/main/install.sh | bash
 ```
 
 ---
@@ -255,8 +255,8 @@ sudo apt install python3 python3-pip git  # Ubuntu/Debian
 brew install python3 git                  # macOS
 
 # Clone and install from source
-git clone https://github.com/MF07-Language-Programing/mf07-core-compiler.git
-cd mf07-core-compiler
+git clone https://github.com/MF07-Language-Programing/mf07-language.git
+cd mf07-language
 pip3 install --user -e .
 ```
 
@@ -288,6 +288,6 @@ echo $PATH | grep -o "$(python3 -m site --user-base)/bin"
 
 ## Support
 
-- **Issues**: https://github.com/MF07-Language-Programing/mf07-core-compiler/issues
-- **Discussions**: https://github.com/MF07-Language-Programing/mf07-core-compiler/discussions
+- **Issues**: https://github.com/MF07-Language-Programing/mf07-language/issues
+- **Discussions**: https://github.com/MF07-Language-Programing/mf07-language/discussions
 - **Security**: security@mf07.dev (when available)

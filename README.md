@@ -4,6 +4,22 @@ A modern, production-grade command-line interface para a linguagem Corplang.
 
 ## Instalação Rápida
 
+### Linux / macOS
+```bash
+curl -fsSL https://raw.githubusercontent.com/MF07-Language-Programing/mf07-language/main/install.sh | bash
+```
+
+### Windows (PowerShell)
+```powershell
+iwr -useb https://raw.githubusercontent.com/MF07-Language-Programing/mf07-language/main/install.sh | iex
+```
+
+### Windows (Git Bash)
+```bash
+curl -fsSL https://raw.githubusercontent.com/MF07-Language-Programing/mf07-language/main/install.sh | bash
+```
+
+### Instalação Manual
 ```bash
 # Via Python
 python -m src.commands --help

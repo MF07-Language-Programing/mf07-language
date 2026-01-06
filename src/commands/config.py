@@ -122,7 +122,7 @@ class CorplangConfig:
 class VersionManager:
     """Manages installed versions with integrity validation and remote capabilities."""
 
-    DEFAULT_REPO = "MF07-Language-Programing/mf07-core-compiler"
+    DEFAULT_REPO = "MF07-Language-Programing/mf07-language"
 
     def __init__(self):
         self.versions_dir = CorplangConfig.get_installed_versions_dir()

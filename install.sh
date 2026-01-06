@@ -11,7 +11,7 @@
 set -e
 
 REPO_OWNER="${MF_REPO_OWNER:-MF07-Language-Programing}"
-REPO_NAME="${MF_REPO_NAME:-mf07-core-compiler}"
+REPO_NAME="${MF_REPO_NAME:-mf07-language}"
 INSTALL_DIR="${MF_INSTALL_DIR:-$HOME/.mf}"
 BIN_DIR="$INSTALL_DIR/bin"
 VERSION="${MF_VERSION:-latest}"
@@ -127,7 +127,7 @@ install_via_pip() {
             exit 1
         fi
         
-        cd "mf07-core-compiler-$VERSION" 2>/dev/null || cd "mf07-language-$VERSION" 2>/dev/null || {
+        cd "mf07-language-$VERSION" 2>/dev/null || cd "mf07-core-compiler-$VERSION" 2>/dev/null || {
             log_error "Failed to extract archive"
             exit 1
         }
