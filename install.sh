@@ -213,16 +213,15 @@ install_via_pip() {
     
     cd mf07* 2>/dev/null || true
     
-    # Use pip3 if available, otherwise pip
-    local pip_cmd="pip3"
-    if ! command -v pip3 &> /dev/null; then
-        pip_cmd="pip"
+    # Decide how to invoke pip (avoid installing as root when running via sudo)
+    local pip_runner="python3 -m pip"
+    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+        pip_runner="sudo -u \"$SUDO_USER\" -E python3 -m pip"
     fi
-    
-    # Always use 'python3 -m pip' (not pip3)
-    # Use --break-system-packages for Python 3.11+ on Debian/Ubuntu (safe with --user)
-    python3 -m pip install --user --break-system-packages -e . 2>/dev/null || \
-    python3 -m pip install --user -e . || {
+
+    # Always use 'python3 -m pip' with user install; allow break-system-packages for Debian/Ubuntu
+    PIP_BREAK_SYSTEM_PACKAGES=1 PIP_DISABLE_PIP_VERSION_CHECK=1 eval "$pip_runner install --user --break-system-packages -e ." 2>/dev/null || \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 eval "$pip_runner install --user -e ." || {
         log_error "Installation failed"
         exit 1
     }
