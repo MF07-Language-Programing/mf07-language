@@ -8,7 +8,7 @@ import argparse
 
 from src.commands.config import CorplangConfig
 from src.commands.utils.utils import Output, Colors, CLIResult
-from src.commands.handlers import compile, run, init, version, versions, env, build, db, docs, repl, publish, uninstall
+from src.commands.handlers import compile, run, init, version, versions, env, build, db, docs, repl, publish, uninstall, core
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -55,6 +55,7 @@ For more information, visit https://github.com/MF07-Language-Programing/mf07-lan
     create_docs_parser(subparsers)
     create_publish_parser(subparsers)
     create_uninstall_parser(subparsers)
+    create_core_parser(subparsers)
 
     return parser
 
@@ -385,6 +386,39 @@ def create_uninstall_parser(subparsers) -> argparse.ArgumentParser:
     )
 
     parser.set_defaults(handler=uninstall.handle_uninstall)
+    return parser
+
+
+def create_core_parser(subparsers) -> argparse.ArgumentParser:
+    """Create parser for 'core' command."""
+    parser = subparsers.add_parser(
+        "core",
+        aliases=["stdlib", "modules"],
+        help="Inspect core modules (stdlib)",
+        description="Show information about core modules and stdlib",
+    )
+
+    sub = parser.add_subparsers(dest="core_cmd")
+
+    # List command
+    p_list = sub.add_parser("list", help="List all core modules")
+    p_list.add_argument("--verbose", "-v", action="store_true", help="Show all modules")
+
+    # Info command
+    p_info = sub.add_parser("info", help="Show stdlib information")
+    p_info.add_argument("--verbose", "-v", action="store_true", help="Show detailed info")
+
+    # Search command
+    p_search = sub.add_parser("search", help="Search for modules")
+    p_search.add_argument("query", help="Search query")
+    p_search.add_argument("--verbose", "-v", action="store_true", help="Show detailed results")
+
+    # Manifest command
+    p_manifest = sub.add_parser("manifest", help="Show manifest contents")
+    p_manifest.add_argument("--json", action="store_true", help="Output as JSON")
+    p_manifest.add_argument("--verbose", "-v", action="store_true", help="Show all entries")
+
+    parser.set_defaults(handler=core.handle_core)
     return parser
 
 
