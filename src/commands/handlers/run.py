@@ -22,17 +22,19 @@ def run_file(
         strict: bool = False,
 ) -> CLIResult:
     """Execute a .mp file."""
-    valid, error_msg = FileValidator.validate_corplang_file(file_path)
+    # Resolve path first
+    resolved_path = PathResolver.resolve_relative_path(file_path, project_root)
+    
+    # Validate after resolving
+    valid, error_msg = FileValidator.validate_corplang_file(str(resolved_path))
     if not valid:
         return CLIResult(success=False, message=error_msg, exit_code=1)
 
-    file_path = str(PathResolver.resolve_relative_path(file_path, project_root))
-
     EnvManager.set_module_path(project_root)
 
-    with Timer(f"Executing {file_path}") as timer:
+    with Timer(f"Executing {resolved_path}") as timer:
         try:
-            ast = parse_file(file_path)
+            ast = parse_file(str(resolved_path))
             Output.debug(f"Parsed {len(ast.statements)} statements", verbose)
 
             result = execute(ast)
