@@ -231,16 +231,26 @@ install_via_pip() {
             log_warn "User install blocked by PEP 668. Falling back to isolated venv."
             local VENV_DIR="$HOME/.local/share/mf07-language-venv"
 
-            # Ensure python3-venv is available (Debian/Ubuntu minimal images may miss it)
-            if ! python3 -m venv --help >/dev/null 2>&1; then
-                if command -v apt &>/dev/null; then
-                    log_info "Installing python3-venv for virtualenv support..."
-                    sudo apt update -qq >/dev/null 2>&1 || true
-                    sudo apt install -y python3-venv python3-distutils python3-ensurepip >/dev/null 2>&1 || true
-                fi
+            # Try to create venv without pip (avoid ensurepip requirement), then bootstrap pip manually
+            if ! python3 -m venv --without-pip "$VENV_DIR" >/dev/null 2>&1; then
+                log_error "Failed to create venv (venv module not available)"
+                exit 1
             fi
 
-            python3 -m venv "$VENV_DIR" || { log_error "Failed to create venv"; exit 1; }
+            # Bootstrap pip into the venv using get-pip.py (no ensurepip dependency)
+            local GET_PIP="$VENV_DIR/get-pip.py"
+            if command -v curl >/dev/null 2>&1; then
+                curl -fsSL https://bootstrap.pypa.io/get-pip.py -o "$GET_PIP"
+            elif command -v wget >/dev/null 2>&1; then
+                wget -qO "$GET_PIP" https://bootstrap.pypa.io/get-pip.py
+            else
+                log_error "curl or wget required to bootstrap pip"
+                exit 1
+            fi
+
+            "$VENV_DIR/bin/python" "$GET_PIP" >/dev/null 2>&1 || { log_error "Failed to bootstrap pip"; exit 1; }
+            rm -f "$GET_PIP"
+
             "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
             "$VENV_DIR/bin/pip" install -e . || { log_error "Venv install failed"; exit 1; }
             mkdir -p "$BIN_DIR"
