@@ -44,7 +44,7 @@ class IdentifierExecutor(NodeExecutor):
             return context.get_var(name)
         except Exception:
             raise CorpLangRuntimeError(
-                f"Undefined variable: {name}", RuntimeErrorType.REFERENCE_ERROR
+                f"Undefined variable: {name}", RuntimeErrorType.REFERENCE_ERROR, node=node
             )
 
 

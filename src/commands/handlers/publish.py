@@ -142,7 +142,7 @@ def _ensure_clean_working_tree() -> bool:
 
 
 def _commit_file(file_path: Path, message: str) -> bool:
-    """Commit a specific file with message."""
+    """Commit a specific file with message (signed)."""
     try:
         subprocess.run(
             ["git", "add", str(file_path)],
@@ -150,7 +150,7 @@ def _commit_file(file_path: Path, message: str) -> bool:
             capture_output=True
         )
         subprocess.run(
-            ["git", "commit", "-m", message],
+            ["git", "commit", "-S", "-m", message],
             check=True,
             capture_output=True
         )

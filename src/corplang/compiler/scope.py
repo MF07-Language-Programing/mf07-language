@@ -274,9 +274,14 @@ class BlockScopeHoister:
     """Applies hoisting transformation to blocks containing conditionals."""
 
     @staticmethod
-    def apply_hoisting(statements: List[Any]) -> List[Any]:
+    def apply_hoisting(statements: List[Any], parent: Any = None) -> List[Any]:
         """Apply hoisting to all if statements in a block."""
         if not statements:
+            return statements
+
+        # Don't hoist inside loops - each iteration needs fresh variables
+        parent_type = type(parent).__name__ if parent else None
+        if parent_type in ("ForStatement", "ForInStatement", "ForOfStatement", "WhileStatement"):
             return statements
 
         result = []

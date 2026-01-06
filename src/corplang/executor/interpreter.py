@@ -492,7 +492,7 @@ class Interpreter:
             "line": declared_line,
             "origin_line": origin_line_final,
             "column": column or getattr(node, "column", None),
-            "function": function or (getattr(node, "name", None) if hasattr(node, "name") else None),
+            "function": function or "<unknown>",
             "node": type(node).__name__ if node is not None else None,
             "locals": dict(locals_map or {}),
         }
@@ -542,7 +542,13 @@ class Interpreter:
             try:
                 node_file = getattr(node, "file", None) or getattr(node, "source_file", None) or self.current_file
                 node_line = getattr(node, "line", None)
-                node_fn = getattr(node, "name", None) or type(node).__name__
+                # For Identifiers, use the node type, not the name (which is the variable being accessed)
+                node_type = type(node).__name__
+                node_fn = None
+                if node_type not in ("Identifier", "GenericIdentifier", "Literal", "BinaryOp", "UnaryOp", "IndexAccess"):
+                    node_fn = getattr(node, "name", None)
+                if not node_fn:
+                    node_fn = node_type
                 locals_map = getattr(ctx, "environment", None).variables if getattr(ctx, "environment", None) is not None else None
                 self.push_frame(node_file, node_line, node_fn, locals_map=locals_map, node=node)
                 pushed_node_frame = True
