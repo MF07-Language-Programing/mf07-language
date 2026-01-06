@@ -13,7 +13,6 @@ set -e
 REPO_OWNER="${MF_REPO_OWNER:-MF07-Language-Programing}"
 REPO_NAME="${MF_REPO_NAME:-mf07-language}"
 INSTALL_DIR="${MF_INSTALL_DIR:-$HOME/.corplang}"
-BIN_DIR="$INSTALL_DIR"
 VERSION="${MF_VERSION:-latest}"
 PYTHON_CMD=""
 
@@ -317,59 +316,57 @@ verify_binary() {
     log_info "✓ Binary verified at: $mf_binary"
 }
 
-setup_shell_profile() {
-    log_step "Configuring shell environment..."
+setup_environment() {
+    log_step "Configuring system environment..."
     
-    local shell_profile
-    local shell_name=$(basename "$SHELL")
+    local os="$(detect_os)"
+    local mf_binary="$INSTALL_DIR/mf"
     
-    case "$shell_name" in
-        bash)
-            if [ "$(detect_os)" = "macos" ]; then
-                shell_profile="$HOME/.bash_profile"
+    # Try to create symlink in /usr/local/bin for global access
+    if [ "$os" = "linux" ] || [ "$os" = "macos" ]; then
+        if [ ! -e /usr/local/bin/mf ]; then
+            if command -v sudo &> /dev/null && [ "$(id -u)" -ne 0 ]; then
+                log_info "Creating global symlink at /usr/local/bin/mf..."
+                sudo ln -sf "$mf_binary" /usr/local/bin/mf >/dev/null 2>&1 || {
+                    log_warn "Could not create global symlink. mf will be available via: $mf_binary"
+                    log_info "To use mf globally, run: sudo ln -s $mf_binary /usr/local/bin/mf"
+                    return
+                }
+                log_info "✓ Global symlink created at: /usr/local/bin/mf"
+            elif [ "$(id -u)" -eq 0 ]; then
+                ln -sf "$mf_binary" /usr/local/bin/mf
+                log_info "✓ Global symlink created at: /usr/local/bin/mf"
             else
-                shell_profile="$HOME/.bashrc"
+                log_info "mf will be available at: $mf_binary"
+                log_info "To use globally, add to PATH or run: sudo ln -s $mf_binary /usr/local/bin/mf"
             fi
-            ;;
-        zsh)
-            shell_profile="$HOME/.zshrc"
-            ;;
-        fish)
-            shell_profile="$HOME/.config/fish/config.fish"
-            ;;
-        *)
-            shell_profile="$HOME/.profile"
-            ;;
-    esac
-    
-    local path_export="export PATH=\"$INSTALL_DIR:\$PATH\""
-    
-    if ! grep -q "$BIN_DIR" "$shell_profile" 2>/dev/null; then
-        echo "" >> "$shell_profile"
-        echo "# MF07 Language CLI" >> "$shell_profile"
-        echo "$path_export" >> "$shell_profile"
-        log_info "✓ Environment variables configured successfully"
-        log_info "  Added $BIN_DIR to PATH in $shell_profile"
-    else
-        log_info "✓ Environment variables already configured"
-        log_info "  PATH already includes $BIN_DIR in $shell_profile"
+        else
+            log_info "✓ mf already available at: /usr/local/bin/mf"
+        fi
+    elif [ "$os" = "windows" ]; then
+        log_info "On Windows, mf is available at: $mf_binary"
+        log_info "Add $INSTALL_DIR to your PATH environment variable via System Settings > Environment Variables"
     fi
 }
 
 verify_installation() {
     log_step "Verifying installation..."
     
-    export PATH="$INSTALL_DIR:$PATH"
+    local mf_path=""
     
+    # Check if mf is globally available
     if command -v mf &> /dev/null; then
+        mf_path=$(which mf)
         local installed_version
         installed_version=$(mf --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
         log_info "✓ MF CLI installed successfully"
         log_info "  Version: $installed_version"
-        log_info "  Path: $(which mf)"
+        log_info "  Path: $mf_path"
     else
-        log_warn "CLI not found in PATH. Restart your shell or run:"
-        echo "  export PATH=\"\$PATH:$BIN_DIR\""
+        log_warn "mf not found in global PATH"
+        log_info "mf is installed at: $INSTALL_DIR/mf"
+        log_info "To use globally, ensure /usr/local/bin is in your PATH or run:"
+        echo "  sudo ln -s $INSTALL_DIR/mf /usr/local/bin/mf"
     fi
 }
 
@@ -421,7 +418,7 @@ main() {
     
     install_mf_binary
     verify_binary
-    setup_shell_profile
+    setup_environment
     verify_installation
     cleanup
     print_next_steps
