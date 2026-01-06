@@ -606,7 +606,7 @@ class Literal(ASTNode):
     Attributes:
         value (Union[int, float, str, bool]): The actual value of the literal.
     """
-    value: Union[int, float, str, bool]
+    value: Union[int, float, str, bool, None]
 
 
 @dataclass(kw_only=True)
