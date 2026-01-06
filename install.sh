@@ -220,6 +220,8 @@ install_via_pip() {
     fi
     
     # Always use 'python3 -m pip' (not pip3)
+    # Use --break-system-packages for Python 3.11+ on Debian/Ubuntu (safe with --user)
+    python3 -m pip install --user --break-system-packages -e . 2>/dev/null || \
     python3 -m pip install --user -e . || {
         log_error "Installation failed"
         exit 1
