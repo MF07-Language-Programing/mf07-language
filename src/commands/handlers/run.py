@@ -22,19 +22,16 @@ def run_file(
         strict: bool = False,
 ) -> CLIResult:
     """Execute a .mp file."""
-    # Resolve path first
-    resolved_path = PathResolver.resolve_relative_path(file_path, project_root)
-    
-    # Validate after resolving
-    valid, error_msg = FileValidator.validate_corplang_file(str(resolved_path))
+    # file_path is already resolved, just validate
+    valid, error_msg = FileValidator.validate_corplang_file(file_path)
     if not valid:
         return CLIResult(success=False, message=error_msg, exit_code=1)
 
     EnvManager.set_module_path(project_root)
 
-    with Timer(f"Executing {resolved_path}") as timer:
+    with Timer(f"Executing {file_path}") as timer:
         try:
-            ast = parse_file(str(resolved_path))
+            ast = parse_file(file_path)
             Output.debug(f"Parsed {len(ast.statements)} statements", verbose)
 
             result = execute(ast)
@@ -60,12 +57,16 @@ def handle_run(args) -> CLIResult:
             exit_code=1,
         )
 
-    project_root = CorplangConfig.get_project_root(args.file)
+    # Resolve path first to get actual file location
+    resolved_path = PathResolver.resolve_relative_path(args.file)
+    
+    # Then get project root from resolved path
+    project_root = CorplangConfig.get_project_root(str(resolved_path))
 
     strict = args.strict or EnvManager.get_corplang_strict()
 
     return run_file(
-        args.file,
+        str(resolved_path),
         project_root=project_root,
         verbose=args.verbose,
         strict=strict,
