@@ -106,7 +106,7 @@ jobs:
             --hidden-import=yaml `
             --hidden-import=pyyaml `
             --collect-all pyyaml `
-            mf.bat 2>&1 | Tee-Object -FilePath packaging\build.log
+            mf 2>&1 | Tee-Object -FilePath packaging\build.log
           Get-ChildItem -Path dist\ -Recurse
 
       - name: Test executable
