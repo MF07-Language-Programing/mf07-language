@@ -141,11 +141,19 @@ ensure_python() {
         local UV_DIR="$HOME/.local/share/mf07-uv"
         local UV_BIN="$UV_DIR/bin/uv"
         if [ ! -x "$UV_BIN" ]; then
+            log_info "Installing uv package manager..."
             local UV_URL="https://astral.sh/uv/install.sh"
+            mkdir -p "$UV_DIR"
             if command -v curl >/dev/null 2>&1; then
-                env UV_INSTALL_DIR="$UV_DIR" sh -c "curl -fsSL $UV_URL | sh -s -- --disable-modify-path" >/dev/null 2>&1
+                curl -fsSL "$UV_URL" | env UV_INSTALL_DIR="$UV_DIR" sh -s -- --disable-modify-path || {
+                    log_error "Failed to install uv"
+                    exit 1
+                }
             elif command -v wget >/dev/null 2>&1; then
-                env UV_INSTALL_DIR="$UV_DIR" sh -c "wget -qO- $UV_URL | sh -s -- --disable-modify-path" >/dev/null 2>&1
+                wget -qO- "$UV_URL" | env UV_INSTALL_DIR="$UV_DIR" sh -s -- --disable-modify-path || {
+                    log_error "Failed to install uv"
+                    exit 1
+                }
             else
                 log_error "curl or wget required to install python3.14 automatically"
                 exit 1
@@ -153,12 +161,17 @@ ensure_python() {
         fi
 
         if [ -x "$UV_BIN" ]; then
-            UV_PYTHON_INSTALL_DIR="$UV_DIR/python" "$UV_BIN" python install 3.14 >/dev/null 2>&1 || log_warn "uv python install 3.14 failed"
-            PYTHON_CMD=$("$UV_BIN" python find 3.14 --format '{executable}' 2>/dev/null)
+            log_info "Downloading python3.14 (this may take a moment)..."
+            UV_PYTHON_INSTALL_DIR="$UV_DIR/python" "$UV_BIN" python install 3.14 || {
+                log_error "Failed to install python3.14 via uv"
+                exit 1
+            }
+            PYTHON_CMD=$("$UV_BIN" python find 3.14 2>/dev/null | head -1)
             if [ -z "$PYTHON_CMD" ] || [ ! -x "$PYTHON_CMD" ]; then
-                log_error "Failed to provision python3.14 via uv"
+                log_error "Failed to locate python3.14 after uv installation"
                 exit 1
             fi
+            log_info "Python3.14 provisioned at $PYTHON_CMD"
         else
             log_error "uv installer failed; cannot provision python3.14"
             exit 1
