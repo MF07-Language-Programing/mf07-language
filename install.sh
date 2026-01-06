@@ -12,7 +12,7 @@ set -e
 
 REPO_OWNER="${MF_REPO_OWNER:-MF07-Language-Programing}"
 REPO_NAME="${MF_REPO_NAME:-mf07-language}"
-INSTALL_DIR="${MF_INSTALL_DIR:-$HOME/.mf}"
+INSTALL_DIR="${MF_INSTALL_DIR:-$HOME/.corplang}"
 BIN_DIR="$INSTALL_DIR/bin"
 VERSION="${MF_VERSION:-latest}"
 PYTHON_CMD=""
@@ -358,6 +358,18 @@ setup_binary_symlink() {
     
     mkdir -p "$BIN_DIR"
     
+    # Check if already installed in venv (from fallback path)
+    local VENV_DIR="$HOME/.local/share/mf07-language-venv"
+    if [ -f "$VENV_DIR/bin/mf" ]; then
+        ln -sf "$VENV_DIR/bin/mf" "$BIN_DIR/mf" 2>/dev/null || {
+            cp "$VENV_DIR/bin/mf" "$BIN_DIR/mf"
+            chmod +x "$BIN_DIR/mf"
+        }
+        log_info "CLI binary linked from venv to $BIN_DIR/mf"
+        return
+    fi
+    
+    # Otherwise check user site packages
     local python_bin_dir
     python_bin_dir=$("$PYTHON_CMD" -c "import site; print(site.USER_BASE + '/bin')")
     
@@ -368,7 +380,7 @@ setup_binary_symlink() {
         }
         log_info "CLI binary linked to $BIN_DIR/mf"
     else
-        log_warn "CLI binary not found at $python_bin_dir/mf"
+        log_warn "CLI binary not found at $python_bin_dir/mf or $VENV_DIR/bin/mf"
     fi
 }
 
@@ -437,15 +449,15 @@ print_next_steps() {
     echo ""
     echo "Next steps:"
     echo "  1. Restart your shell or run:"
-    echo "     ${GREEN}source ~/.bashrc${RESET}  # or ~/.zshrc, ~/.bash_profile"
+    echo -e "     ${GREEN}source ~/.bashrc${RESET}  # or ~/.zshrc, ~/.bash_profile"
     echo ""
     echo "  2. Verify installation:"
-    echo "     ${GREEN}mf --version${RESET}"
+    echo -e "     ${GREEN}mf --version${RESET}"
     echo ""
     echo "  3. Create your first project:"
-    echo "     ${GREEN}mf init myproject${RESET}"
-    echo "     ${GREEN}cd myproject${RESET}"
-    echo "     ${GREEN}mf run main.mp${RESET}"
+    echo -e "     ${GREEN}mf init myproject${RESET}"
+    echo -e "     ${GREEN}cd myproject${RESET}"
+    echo -e "     ${GREEN}mf run main.mp${RESET}"
     echo ""
     echo "Documentation: https://github.com/$REPO_OWNER/$REPO_NAME"
     echo "Issues: https://github.com/$REPO_OWNER/$REPO_NAME/issues"
