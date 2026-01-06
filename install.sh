@@ -130,12 +130,23 @@ check_dependencies() {
 get_latest_version() {
     log_step "Fetching latest version..."
     
-    local api_url="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases/latest"
+    local OS="$(detect_os)"
+    local platform_suffix=""
+    case "$OS" in
+        linux)   platform_suffix="-linux" ;;
+        macos)   platform_suffix="-macos" ;;
+        windows) platform_suffix="-windows" ;;
+    esac
+    
+    local api_url="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
     
     if command -v curl &> /dev/null; then
-        VERSION=$(curl -fsSL "$api_url" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+        # Get all releases and filter by platform
+        local releases=$(curl -fsSL "$api_url")
+        VERSION=$(echo "$releases" | grep '"tag_name":' | grep "$platform_suffix" | head -1 | sed -E 's/.*"v?([^"]+)".*/\1/')
     elif command -v wget &> /dev/null; then
-        VERSION=$(wget -qO- "$api_url" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+        local releases=$(wget -qO- "$api_url")
+        VERSION=$(echo "$releases" | grep '"tag_name":' | grep "$platform_suffix" | head -1 | sed -E 's/.*"v?([^"]+)".*/\1/')
     else
         log_error "curl or wget required"
         exit 1
