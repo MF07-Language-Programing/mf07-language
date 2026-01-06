@@ -365,31 +365,31 @@ setup_binary_symlink() {
             cp "$VENV_DIR/bin/mf" "$BIN_DIR/mf"
             chmod +x "$BIN_DIR/mf"
         }
-        log_info "CLI binary linked from venv to $BIN_DIR/mf"
+        log_info "✓ CLI executable installed at: $BIN_DIR/mf"
         return
     fi
     
     # Otherwise check user site packages
     local python_bin_dir
-    python_bin_dir=$("$PYTHON_CMD" -c "import site; print(site.USER_BASE + '/bin')")
+    python_bin_dir=$("$PYTHON_CMD" -c "import site; print(site.USER_BASE + '/bin')" 2>/dev/null || echo "")
     
-    if [ -f "$python_bin_dir/mf" ]; then
+    if [ -n "$python_bin_dir" ] && [ -f "$python_bin_dir/mf" ]; then
         ln -sf "$python_bin_dir/mf" "$BIN_DIR/mf" 2>/dev/null || {
             cp "$python_bin_dir/mf" "$BIN_DIR/mf"
             chmod +x "$BIN_DIR/mf"
         }
-        log_info "CLI binary linked to $BIN_DIR/mf"
-    else
-        # Create wrapper script if pip didn't create the binary
-        log_warn "CLI binary not found, creating wrapper script..."
-        cat > "$BIN_DIR/mf" << 'EOF'
-#!/usr/bin/env bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec python3.14 -m src.commands "$@"
-EOF
-        chmod +x "$BIN_DIR/mf"
-        log_info "Wrapper script created at $BIN_DIR/mf"
+        log_info "✓ CLI executable installed at: $BIN_DIR/mf"
+        return
     fi
+    
+    # Create wrapper script as fallback
+    log_info "Creating CLI wrapper script..."
+    cat > "$BIN_DIR/mf" << EOF
+#!/usr/bin/env bash
+exec "$PYTHON_CMD" -m src.commands "\$@"
+EOF
+    chmod +x "$BIN_DIR/mf"
+    log_info "✓ CLI executable installed at: $BIN_DIR/mf"
 }
 
 setup_shell_profile() {
@@ -423,9 +423,11 @@ setup_shell_profile() {
         echo "" >> "$shell_profile"
         echo "# MF07 Language CLI" >> "$shell_profile"
         echo "$path_export" >> "$shell_profile"
-        log_info "Added $BIN_DIR to PATH in $shell_profile"
+        log_info "✓ Environment variables configured successfully"
+        log_info "  Added $BIN_DIR to PATH in $shell_profile"
     else
-        log_info "PATH already configured in $shell_profile"
+        log_info "✓ Environment variables already configured"
+        log_info "  PATH already includes $BIN_DIR in $shell_profile"
     fi
 }
 
