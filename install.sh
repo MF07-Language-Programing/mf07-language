@@ -182,12 +182,14 @@ install_via_pip() {
     
     cd mf07* 2>/dev/null || true
     
+    # Use pip3 if available, otherwise pip
     local pip_cmd="pip3"
     if ! command -v pip3 &> /dev/null; then
         pip_cmd="pip"
     fi
     
-    python3 -m "${pip_cmd}" install --user -e . || {
+    # Always use 'python3 -m pip' (not pip3)
+    python3 -m pip install --user -e . || {
         log_error "Installation failed"
         exit 1
     }
