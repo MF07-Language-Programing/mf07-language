@@ -380,7 +380,15 @@ setup_binary_symlink() {
         }
         log_info "CLI binary linked to $BIN_DIR/mf"
     else
-        log_warn "CLI binary not found at $python_bin_dir/mf or $VENV_DIR/bin/mf"
+        # Create wrapper script if pip didn't create the binary
+        log_warn "CLI binary not found, creating wrapper script..."
+        cat > "$BIN_DIR/mf" << 'EOF'
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec python3.14 -m src.commands "$@"
+EOF
+        chmod +x "$BIN_DIR/mf"
+        log_info "Wrapper script created at $BIN_DIR/mf"
     fi
 }
 
