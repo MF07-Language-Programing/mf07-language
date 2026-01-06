@@ -61,7 +61,11 @@ check_dependencies() {
     
     # Check if running with sudo/root on Linux with apt
     if [ "$(detect_os)" = "linux" ] && command -v apt &> /dev/null; then
-        if [ "$EUID" -eq 0 ] || [ -n "$SUDO_USER" ]; then
+        # Check if root (UID 0) or has sudo in environment
+        if [ "$(id -u)" -eq 0 ]; then
+            can_auto_install=true
+        elif command -v sudo &> /dev/null; then
+            # Not root but has sudo available - try to use it
             can_auto_install=true
         fi
     fi
@@ -83,17 +87,23 @@ check_dependencies() {
             log_info "Missing dependencies: ${missing[*]}"
             log_info "Attempting to install automatically..."
             
-            apt update -qq || true
+            # Use sudo if not root
+            local SUDO_CMD=""
+            if [ "$(id -u)" -ne 0 ]; then
+                SUDO_CMD="sudo"
+            fi
+            
+            $SUDO_CMD apt update -qq || true
             for dep in "${missing[@]}"; do
                 case "$dep" in
                     python3)
-                        apt install -y python3 python3-venv || log_warning "Failed to install python3"
+                        $SUDO_CMD apt install -y python3 python3-venv || log_warning "Failed to install python3"
                         ;;
                     pip)
-                        apt install -y python3-pip || log_warning "Failed to install pip"
+                        $SUDO_CMD apt install -y python3-pip || log_warning "Failed to install pip"
                         ;;
                     git)
-                        apt install -y git || log_warning "Failed to install git"
+                        $SUDO_CMD apt install -y git || log_warning "Failed to install git"
                         ;;
                 esac
             done
