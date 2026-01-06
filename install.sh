@@ -15,6 +15,7 @@ REPO_NAME="${MF_REPO_NAME:-mf07-language}"
 INSTALL_DIR="${MF_INSTALL_DIR:-$HOME/.mf}"
 BIN_DIR="$INSTALL_DIR/bin"
 VERSION="${MF_VERSION:-latest}"
+PYTHON_CMD=""
 
 BOLD="\033[1m"
 GREEN="\033[0;32m"
@@ -62,15 +63,9 @@ detect_arch() {
 
 check_dependencies() {
     local missing=()
-    
-    if ! command -v python3 &> /dev/null; then
-        missing+=("python3")
-    fi
-    
-    if ! command -v pip3 &> /dev/null && ! command -v pip &> /dev/null; then
-        missing+=("pip")
-    fi
-    
+
+    ensure_python
+
     if ! command -v git &> /dev/null; then
         missing+=("git")
     fi
@@ -91,12 +86,6 @@ check_dependencies() {
             if $SUDO_CMD apt update -qq 2>/dev/null; then
                 for dep in "${missing[@]}"; do
                     case "$dep" in
-                        python3)
-                            $SUDO_CMD apt install -y python3 python3-venv 2>/dev/null || log_warn "Failed to install python3"
-                            ;;
-                        pip)
-                            $SUDO_CMD apt install -y python3-pip 2>/dev/null || log_warn "Failed to install pip"
-                            ;;
                         git)
                             $SUDO_CMD apt install -y git 2>/dev/null || log_warn "Failed to install git"
                             ;;
@@ -105,12 +94,6 @@ check_dependencies() {
                 
                 # Recheck after installation
                 missing=()
-                if ! command -v python3 &> /dev/null; then
-                    missing+=("python3")
-                fi
-                if ! command -v pip3 &> /dev/null && ! command -v pip &> /dev/null; then
-                    missing+=("pip")
-                fi
                 if ! command -v git &> /dev/null; then
                     missing+=("git")
                 fi
@@ -125,10 +108,96 @@ check_dependencies() {
         # If auto-install failed or not available, show manual instructions
         log_error "Missing dependencies: ${missing[*]}"
         log_info "Install them manually:"
-        echo "  Ubuntu/Debian: sudo apt install python3 python3-pip git"
+        echo "  Ubuntu/Debian: sudo apt install python3.14 python3.14-venv python3.14-distutils git"
         echo "  macOS: brew install python3 git"
         echo "  Windows: Install Git Bash and Python from official sites"
         exit 1
+    fi
+}
+
+ensure_python() {
+    local desired="python3.14"
+
+    if command -v "$desired" >/dev/null 2>&1; then
+        PYTHON_CMD="$desired"
+    fi
+
+    if [ -z "$PYTHON_CMD" ] && [ "$(detect_os)" = "linux" ] && command -v apt >/dev/null 2>&1; then
+        log_warn "python3.14 not found. Attempting to install automatically..."
+        local SUDO_CMD=""
+        if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+            SUDO_CMD="sudo"
+            log_info "Running: sudo apt update && sudo apt install -y python3.14 python3.14-venv python3.14-distutils"
+        fi
+        $SUDO_CMD apt update -qq >/dev/null 2>&1 || true
+        $SUDO_CMD apt install -y python3.14 python3.14-venv python3.14-distutils >/dev/null 2>&1 || log_warn "Failed to install python3.14 via apt"
+        if command -v "$desired" >/dev/null 2>&1; then
+            PYTHON_CMD="$desired"
+        fi
+    fi
+
+    if [ -z "$PYTHON_CMD" ]; then
+        log_warn "Falling back to bundled python3.14 using uv (no sudo)."
+        local UV_DIR="$HOME/.local/share/mf07-uv"
+        local UV_BIN="$UV_DIR/bin/uv"
+        if [ ! -x "$UV_BIN" ]; then
+            local UV_URL="https://astral.sh/uv/install.sh"
+            if command -v curl >/dev/null 2>&1; then
+                env UV_INSTALL_DIR="$UV_DIR" sh -c "curl -fsSL $UV_URL | sh -s -- --disable-modify-path" >/dev/null 2>&1
+            elif command -v wget >/dev/null 2>&1; then
+                env UV_INSTALL_DIR="$UV_DIR" sh -c "wget -qO- $UV_URL | sh -s -- --disable-modify-path" >/dev/null 2>&1
+            else
+                log_error "curl or wget required to install python3.14 automatically"
+                exit 1
+            fi
+        fi
+
+        if [ -x "$UV_BIN" ]; then
+            UV_PYTHON_INSTALL_DIR="$UV_DIR/python" "$UV_BIN" python install 3.14 >/dev/null 2>&1 || log_warn "uv python install 3.14 failed"
+            PYTHON_CMD=$("$UV_BIN" python find 3.14 --format '{executable}' 2>/dev/null)
+            if [ -z "$PYTHON_CMD" ] || [ ! -x "$PYTHON_CMD" ]; then
+                log_error "Failed to provision python3.14 via uv"
+                exit 1
+            fi
+        else
+            log_error "uv installer failed; cannot provision python3.14"
+            exit 1
+        fi
+    fi
+
+    if [ -z "$PYTHON_CMD" ]; then
+        log_error "python3.14 is required but not available. Please install python3.14 and rerun."
+        exit 1
+    fi
+
+    local py_ver
+    py_ver=$("$PYTHON_CMD" - <<'PY'
+import sys
+print(f"{sys.version_info.major}.{sys.version_info.minor}")
+PY
+    )
+
+    if [ "$py_ver" != "3.14" ]; then
+        log_error "Expected python3.14, but found $py_ver"
+        exit 1
+    fi
+
+    if ! "$PYTHON_CMD" -Im ensurepip --version >/dev/null 2>&1; then
+        if [ "$(detect_os)" = "linux" ] && command -v apt >/dev/null 2>&1; then
+            log_warn "ensurepip missing for python3.14. Installing python3.14-venv..."
+            local SUDO_CMD=""
+            if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then
+                SUDO_CMD="sudo"
+            fi
+            $SUDO_CMD apt install -y python3.14-venv python3.14-distutils >/dev/null 2>&1 || log_warn "Failed to install python3.14-venv"
+        fi
+
+        if ! "$PYTHON_CMD" -Im ensurepip --upgrade >/dev/null 2>&1; then
+            log_error "ensurepip is unavailable for $PYTHON_CMD. Please install python3.14-venv."
+            exit 1
+        fi
+    else
+        "$PYTHON_CMD" -Im ensurepip --upgrade >/dev/null 2>&1 || true
     fi
 }
 
@@ -147,7 +216,7 @@ get_latest_version() {
     
     if command -v curl &> /dev/null; then
         # Get all releases and filter by platform using python for robust JSON parsing
-        VERSION=$(curl -fsSL "$api_url" 2>/dev/null | python3 -c "
+        VERSION=$(curl -fsSL "$api_url" 2>/dev/null | "$PYTHON_CMD" -c "
 import sys, json
 try:
     releases = json.load(sys.stdin)
@@ -160,7 +229,7 @@ try:
 except: pass
 " 2>/dev/null)
     elif command -v wget &> /dev/null; then
-        VERSION=$(wget -qO- "$api_url" 2>/dev/null | python3 -c "
+        VERSION=$(wget -qO- "$api_url" 2>/dev/null | "$PYTHON_CMD" -c "
 import sys, json
 try:
     releases = json.load(sys.stdin)
@@ -219,7 +288,7 @@ install_via_pip() {
     cd mf07* 2>/dev/null || true
 
     # Run pip as invoking user (when sudo) to avoid system-wide install
-    local py_cmd="python3"
+    local py_cmd="$PYTHON_CMD"
     local pip_cmd=("$py_cmd" -m pip)
     if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
         pip_cmd=(sudo -u "$SUDO_USER" -E "$py_cmd" -m pip)
@@ -228,28 +297,28 @@ install_via_pip() {
     # Try user install with break-system-packages; fallback to venv if still blocked
     if ! PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_BREAK_SYSTEM_PACKAGES=1 "${pip_cmd[@]}" install --user --break-system-packages -e . 2>/dev/null; then
         if ! PIP_DISABLE_PIP_VERSION_CHECK=1 "${pip_cmd[@]}" install --user -e . 2>/dev/null; then
-            log_warn "User install blocked by PEP 668. Falling back to isolated venv."
+            log_warn "User install blocked by PEP 668. Falling back to isolated venv with python3.14."
             local VENV_DIR="$HOME/.local/share/mf07-language-venv"
 
-            # Try to create venv without pip (avoid ensurepip requirement), then bootstrap pip manually
-            if ! python3 -m venv --without-pip "$VENV_DIR" >/dev/null 2>&1; then
-                log_error "Failed to create venv (venv module not available)"
+            if ! "$py_cmd" -m venv "$VENV_DIR" >/dev/null 2>&1; then
+                log_error "Failed to create venv with python3.14 (ensure python3.14-venv is installed)"
                 exit 1
             fi
 
-            # Bootstrap pip into the venv using get-pip.py (no ensurepip dependency)
-            local GET_PIP="$VENV_DIR/get-pip.py"
-            if command -v curl >/dev/null 2>&1; then
-                curl -fsSL https://bootstrap.pypa.io/get-pip.py -o "$GET_PIP"
-            elif command -v wget >/dev/null 2>&1; then
-                wget -qO "$GET_PIP" https://bootstrap.pypa.io/get-pip.py
-            else
-                log_error "curl or wget required to bootstrap pip"
-                exit 1
+            # Ensure pip exists even if ensurepip under-delivers
+            if [ ! -x "$VENV_DIR/bin/pip" ]; then
+                local GET_PIP="$VENV_DIR/get-pip.py"
+                if command -v curl >/dev/null 2>&1; then
+                    curl -fsSL https://bootstrap.pypa.io/get-pip.py -o "$GET_PIP"
+                elif command -v wget >/dev/null 2>&1; then
+                    wget -qO "$GET_PIP" https://bootstrap.pypa.io/get-pip.py
+                else
+                    log_error "curl or wget required to bootstrap pip"
+                    exit 1
+                fi
+                "$VENV_DIR/bin/python" "$GET_PIP" >/dev/null 2>&1 || { log_error "Failed to bootstrap pip"; exit 1; }
+                rm -f "$GET_PIP"
             fi
-
-            "$VENV_DIR/bin/python" "$GET_PIP" >/dev/null 2>&1 || { log_error "Failed to bootstrap pip"; exit 1; }
-            rm -f "$GET_PIP"
 
             "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
             "$VENV_DIR/bin/pip" install -e . || { log_error "Venv install failed"; exit 1; }
@@ -275,7 +344,7 @@ setup_binary_symlink() {
     mkdir -p "$BIN_DIR"
     
     local python_bin_dir
-    python_bin_dir=$(python3 -c "import site; print(site.USER_BASE + '/bin')")
+    python_bin_dir=$("$PYTHON_CMD" -c "import site; print(site.USER_BASE + '/bin')")
     
     if [ -f "$python_bin_dir/mf" ]; then
         ln -sf "$python_bin_dir/mf" "$BIN_DIR/mf" 2>/dev/null || {
