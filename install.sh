@@ -57,18 +57,6 @@ detect_arch() {
 
 check_dependencies() {
     local missing=()
-    local can_auto_install=false
-    
-    # Check if running with sudo/root on Linux with apt
-    if [ "$(detect_os)" = "linux" ] && command -v apt &> /dev/null; then
-        # Check if root (UID 0) or has sudo in environment
-        if [ "$(id -u)" -eq 0 ]; then
-            can_auto_install=true
-        elif command -v sudo &> /dev/null; then
-            # Not root but has sudo available - try to use it
-            can_auto_install=true
-        fi
-    fi
     
     if ! command -v python3 &> /dev/null; then
         missing+=("python3")
@@ -83,57 +71,59 @@ check_dependencies() {
     fi
     
     if [ ${#missing[@]} -gt 0 ]; then
-        if [ "$can_auto_install" = true ]; then
+        # Try to auto-install on Linux with apt
+        if [ "$(detect_os)" = "linux" ] && command -v apt &> /dev/null && command -v sudo &> /dev/null; then
             log_info "Missing dependencies: ${missing[*]}"
-            log_info "Attempting to install automatically..."
+            log_info "Attempting to install automatically (sudo may ask for password)..."
             
             # Use sudo if not root
             local SUDO_CMD=""
             if [ "$(id -u)" -ne 0 ]; then
                 SUDO_CMD="sudo"
+                log_info "Running: sudo apt update && sudo apt install -y ${missing[*]}"
             fi
             
-            $SUDO_CMD apt update -qq || true
-            for dep in "${missing[@]}"; do
-                case "$dep" in
-                    python3)
-                        $SUDO_CMD apt install -y python3 python3-venv || log_warning "Failed to install python3"
-                        ;;
-                    pip)
-                        $SUDO_CMD apt install -y python3-pip || log_warning "Failed to install pip"
-                        ;;
-                    git)
-                        $SUDO_CMD apt install -y git || log_warning "Failed to install git"
-                        ;;
-                esac
-            done
-            
-            # Recheck after installation
-            missing=()
-            if ! command -v python3 &> /dev/null; then
-                missing+=("python3")
+            if $SUDO_CMD apt update -qq 2>/dev/null; then
+                for dep in "${missing[@]}"; do
+                    case "$dep" in
+                        python3)
+                            $SUDO_CMD apt install -y python3 python3-venv 2>/dev/null || log_warning "Failed to install python3"
+                            ;;
+                        pip)
+                            $SUDO_CMD apt install -y python3-pip 2>/dev/null || log_warning "Failed to install pip"
+                            ;;
+                        git)
+                            $SUDO_CMD apt install -y git 2>/dev/null || log_warning "Failed to install git"
+                            ;;
+                    esac
+                done
+                
+                # Recheck after installation
+                missing=()
+                if ! command -v python3 &> /dev/null; then
+                    missing+=("python3")
+                fi
+                if ! command -v pip3 &> /dev/null && ! command -v pip &> /dev/null; then
+                    missing+=("pip")
+                fi
+                if ! command -v git &> /dev/null; then
+                    missing+=("git")
+                fi
+                
+                if [ ${#missing[@]} -eq 0 ]; then
+                    log_info "Dependencies installed successfully!"
+                    return 0
+                fi
             fi
-            if ! command -v pip3 &> /dev/null && ! command -v pip &> /dev/null; then
-                missing+=("pip")
-            fi
-            if ! command -v git &> /dev/null; then
-                missing+=("git")
-            fi
-            
-            if [ ${#missing[@]} -gt 0 ]; then
-                log_error "Failed to install: ${missing[*]}"
-                exit 1
-            fi
-            
-            log_info "Dependencies installed successfully!"
-        else
-            log_error "Missing dependencies: ${missing[*]}"
-            log_info "Run with sudo to auto-install, or install manually:"
-            echo "  Ubuntu/Debian: sudo apt install python3 python3-pip git"
-            echo "  macOS: brew install python3 git"
-            echo "  Windows: Install Git Bash and Python from official sites"
-            exit 1
         fi
+        
+        # If auto-install failed or not available, show manual instructions
+        log_error "Missing dependencies: ${missing[*]}"
+        log_info "Install them manually:"
+        echo "  Ubuntu/Debian: sudo apt install python3 python3-pip git"
+        echo "  macOS: brew install python3 git"
+        echo "  Windows: Install Git Bash and Python from official sites"
+        exit 1
     fi
 }
 
