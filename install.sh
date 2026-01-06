@@ -57,6 +57,14 @@ detect_arch() {
 
 check_dependencies() {
     local missing=()
+    local can_auto_install=false
+    
+    # Check if running with sudo/root on Linux with apt
+    if [ "$(detect_os)" = "linux" ] && command -v apt &> /dev/null; then
+        if [ "$EUID" -eq 0 ] || [ -n "$SUDO_USER" ]; then
+            can_auto_install=true
+        fi
+    fi
     
     if ! command -v python3 &> /dev/null; then
         missing+=("python3")
@@ -71,12 +79,51 @@ check_dependencies() {
     fi
     
     if [ ${#missing[@]} -gt 0 ]; then
-        log_error "Missing dependencies: ${missing[*]}"
-        log_info "Install them and try again:"
-        echo "  Ubuntu/Debian: sudo apt install python3 python3-pip git"
-        echo "  macOS: brew install python3 git"
-        echo "  Windows: Install Git Bash and Python from official sites"
-        exit 1
+        if [ "$can_auto_install" = true ]; then
+            log_info "Missing dependencies: ${missing[*]}"
+            log_info "Attempting to install automatically..."
+            
+            apt update -qq || true
+            for dep in "${missing[@]}"; do
+                case "$dep" in
+                    python3)
+                        apt install -y python3 python3-venv || log_warning "Failed to install python3"
+                        ;;
+                    pip)
+                        apt install -y python3-pip || log_warning "Failed to install pip"
+                        ;;
+                    git)
+                        apt install -y git || log_warning "Failed to install git"
+                        ;;
+                esac
+            done
+            
+            # Recheck after installation
+            missing=()
+            if ! command -v python3 &> /dev/null; then
+                missing+=("python3")
+            fi
+            if ! command -v pip3 &> /dev/null && ! command -v pip &> /dev/null; then
+                missing+=("pip")
+            fi
+            if ! command -v git &> /dev/null; then
+                missing+=("git")
+            fi
+            
+            if [ ${#missing[@]} -gt 0 ]; then
+                log_error "Failed to install: ${missing[*]}"
+                exit 1
+            fi
+            
+            log_info "Dependencies installed successfully!"
+        else
+            log_error "Missing dependencies: ${missing[*]}"
+            log_info "Run with sudo to auto-install, or install manually:"
+            echo "  Ubuntu/Debian: sudo apt install python3 python3-pip git"
+            echo "  macOS: brew install python3 git"
+            echo "  Windows: Install Git Bash and Python from official sites"
+            exit 1
+        fi
     fi
 }
 
