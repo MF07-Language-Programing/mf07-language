@@ -4,6 +4,13 @@ permissions:
   contents: write
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pyproject.toml'
+      - 'src/**'
+      - '.github/workflows/publish.yml'
   workflow_dispatch:
     inputs:
       version:
