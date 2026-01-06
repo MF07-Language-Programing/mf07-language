@@ -30,6 +30,11 @@ log_warn() {
     echo -e "${YELLOW}[WARN]${RESET} $1"
 }
 
+# Backward compatibility: some cached scripts may call log_warning
+log_warning() {
+    log_warn "$1"
+}
+
 log_error() {
     echo -e "${RED}[ERROR]${RESET} $1"
 }
