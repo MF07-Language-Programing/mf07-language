@@ -482,8 +482,9 @@ class VersionManager:
         # Set for current process
         os.environ["CORPLANG_ACTIVE_VERSION"] = version
         
-        # Persist to shell config
+        # Persist to shell config and env file
         self._persist_env_var("CORPLANG_ACTIVE_VERSION", version)
+        self._save_version_env(version)
         
         self.log_action("SET_ACTIVE", version, "SUCCESS")
 
@@ -502,6 +503,16 @@ class VersionManager:
                 pass
 
         return True
+    
+    def _save_version_env(self, version: str) -> bool:
+        """Save version to ~/.corplang/version.env for sourcing."""
+        try:
+            env_file = Path.home() / ".corplang" / "version.env"
+            env_file.parent.mkdir(parents=True, exist_ok=True)
+            env_file.write_text(f'export CORPLANG_ACTIVE_VERSION="{version}"\n')
+            return True
+        except Exception:
+            return False
     
     def _persist_env_var(self, var_name: str, value: str) -> bool:
         """Persist environment variable to shell config."""
