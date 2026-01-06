@@ -212,21 +212,31 @@ install_via_pip() {
     fi
     
     cd mf07* 2>/dev/null || true
-    
-    # Decide how to invoke pip (avoid installing as root when running via sudo)
-        # Run pip as invoking user (when sudo) to avoid system-wide install
-        local py_cmd="python3"
-        local pip_cmd=("$py_cmd" -m pip)
-        if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
-            pip_cmd=(sudo -u "$SUDO_USER" -E "$py_cmd" -m pip)
-        fi
 
-        # Allow break-system-packages (PEP 668) with --user, fallback if flag unsupported
-        PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_BREAK_SYSTEM_PACKAGES=1 "${pip_cmd[@]}" install --user --break-system-packages -e . 2>/dev/null || \
-        PIP_DISABLE_PIP_VERSION_CHECK=1 "${pip_cmd[@]}" install --user -e . || {
-            log_error "Installation failed"
-            exit 1
-        }
+    # Run pip as invoking user (when sudo) to avoid system-wide install
+    local py_cmd="python3"
+    local pip_cmd=("$py_cmd" -m pip)
+    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+        pip_cmd=(sudo -u "$SUDO_USER" -E "$py_cmd" -m pip)
+    fi
+
+    # Try user install with break-system-packages; fallback to venv if still blocked
+    if ! PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_BREAK_SYSTEM_PACKAGES=1 "${pip_cmd[@]}" install --user --break-system-packages -e . 2>/dev/null; then
+        if ! PIP_DISABLE_PIP_VERSION_CHECK=1 "${pip_cmd[@]}" install --user -e . 2>/dev/null; then
+            log_warning "User install blocked by PEP 668. Falling back to isolated venv."
+            local VENV_DIR="$HOME/.local/share/mf07-language-venv"
+            python3 -m venv "$VENV_DIR" || { log_error "Failed to create venv"; exit 1; }
+            "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
+            "$VENV_DIR/bin/pip" install -e . || { log_error "Venv install failed"; exit 1; }
+            mkdir -p "$BIN_DIR"
+            ln -sf "$VENV_DIR/bin/mf" "$BIN_DIR/mf"
+            log_info "Installed in isolated venv at $VENV_DIR"
+            cd - > /dev/null
+            rm -rf "$tmp_dir"
+            log_info "Installed mf07-language $VERSION"
+            return
+        fi
+    fi
     
     cd - > /dev/null
     rm -rf "$tmp_dir"

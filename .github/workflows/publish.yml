@@ -4,9 +4,6 @@ permissions:
   contents: write
 
 on:
-  push:
-    branches: [main, 'release/**']
-    tags: ['v*']
   workflow_dispatch:
     inputs:
       version:
