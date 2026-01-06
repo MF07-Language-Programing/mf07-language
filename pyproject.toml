@@ -2,7 +2,7 @@
 name = "mf07-language"
 version = "1.1.1"
 description = "Add your description here"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "pyyaml",
 ]
