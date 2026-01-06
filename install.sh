@@ -141,12 +141,32 @@ get_latest_version() {
     local api_url="https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
     
     if command -v curl &> /dev/null; then
-        # Get all releases and filter by platform
-        local releases=$(curl -fsSL "$api_url")
-        VERSION=$(echo "$releases" | grep '"tag_name":' | grep "$platform_suffix" | head -1 | sed -E 's/.*"v?([^"]+)".*/\1/')
+        # Get all releases and filter by platform using python for robust JSON parsing
+        VERSION=$(curl -fsSL "$api_url" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    releases = json.load(sys.stdin)
+    suffix = '$platform_suffix'
+    for r in releases:
+        tag = r.get('tag_name', '')
+        if tag.endswith(suffix):
+            print(tag.lstrip('v'))
+            break
+except: pass
+" 2>/dev/null)
     elif command -v wget &> /dev/null; then
-        local releases=$(wget -qO- "$api_url")
-        VERSION=$(echo "$releases" | grep '"tag_name":' | grep "$platform_suffix" | head -1 | sed -E 's/.*"v?([^"]+)".*/\1/')
+        VERSION=$(wget -qO- "$api_url" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    releases = json.load(sys.stdin)
+    suffix = '$platform_suffix'
+    for r in releases:
+        tag = r.get('tag_name', '')
+        if tag.endswith(suffix):
+            print(tag.lstrip('v'))
+            break
+except: pass
+" 2>/dev/null)
     else
         log_error "curl or wget required"
         exit 1
