@@ -2,7 +2,7 @@
 
 ## For Developers: Publishing New Versions
 
-### Quick Publish
+### Option 1: Standard Flow (with PR)
 
 ```bash
 # Auto-detect version bump from commits
@@ -19,6 +19,30 @@ mf publish --minor -m "Add new feature X"
 # Skip confirmation
 mf publish --patch --yes
 ```
+
+Then create a **PR** on GitHub from `release/vX.Y.Z` to `main`.
+
+### Option 2: Manual Release (without PR)
+
+If you can't create PRs directly to main:
+
+1. Go to **Actions** tab on GitHub
+2. Select **"Manual Release"** workflow
+3. Click **"Run workflow"**
+4. Enter the version (e.g., `1.1.2`)
+5. Choose if you want to update `pyproject.toml`
+6. Click **"Run workflow"**
+
+GitHub Actions will automatically:
+- ✓ Validate version format
+- ✓ Create/update version
+- ✓ Run tests
+- ✓ Create tag `vX.Y.Z`
+- ✓ Generate GitHub Release
+- ✓ Update documentation
+- ✓ Deploy to GitHub Pages
+
+**No PR needed!** 🚀
 
 ### What Happens
 

@@ -1,0 +1,289 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.1.2)'
+        required: true
+        type: string
+      update_pyproject:
+        description: 'Update pyproject.toml with version'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  manual-release:
+    name: Create Manual Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ inputs.version }}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "Invalid version format: $VERSION"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Update pyproject.toml if needed
+        if: ${{ inputs.update_pyproject == true }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION\"/" pyproject.toml
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if ! git diff --quiet pyproject.toml; then
+            git add pyproject.toml
+            git commit -m "chore: bump version to $VERSION"
+          fi
+
+      - name: Create tag
+        run: |
+          VERSION="${{ inputs.version }}"
+          git tag -a "v$VERSION" -m "Release v$VERSION" || echo "Tag already exists"
+
+      - name: Push changes and tag
+        run: |
+          git push origin || true
+          git push origin "v${{ inputs.version }}" || echo "Tag push failed, may already exist"
+
+  test:
+    name: Run Tests
+    needs: manual-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ inputs.version }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --extra-index-url https://pypi.org/simple -e ".[dev]"
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/ -v --tb=short --cov=src --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-manual-release
+        continue-on-error: true
+
+  build:
+    name: Build Distribution
+    needs: [manual-release, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ inputs.version }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Create distribution package
+        run: |
+          VERSION="${{ inputs.version }}"
+          DIST_DIR="dist"
+          mkdir -p "$DIST_DIR"
+          
+          # Create source archive
+          tar -czf "$DIST_DIR/mf07-language-${VERSION}.tar.gz" \
+            --exclude='.git' \
+            --exclude='.venv' \
+            --exclude='__pycache__' \
+            --exclude='*.pyc' \
+            --exclude='dist' \
+            --exclude='build' \
+            --transform "s,^,mf07-language-${VERSION}/," \
+            .
+          
+          # Create install script with version
+          sed "s/VERSION=.*/VERSION=${VERSION}/" install.sh > "$DIST_DIR/install.sh"
+          chmod +x "$DIST_DIR/install.sh"
+          
+          # Create version info
+          echo "$VERSION" > "$DIST_DIR/VERSION"
+          
+          # Calculate checksums
+          cd "$DIST_DIR"
+          sha256sum * > SHA256SUMS
+          cd ..
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-packages
+          path: dist/
+          retention-days: 7
+
+  create-release:
+    name: Create GitHub Release
+    needs: [manual-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ inputs.version }}
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-packages
+          path: dist/
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ inputs.version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -n "$PREV_TAG" ]; then
+            CHANGES=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            CHANGES=$(git log --pretty=format:"- %s (%h)" --no-merges | head -20)
+          fi
+          
+          cat > release_notes.md << EOF
+          ## What's Changed
+          
+          ${CHANGES}
+          
+          ## Installation
+          
+          \`\`\`bash
+          # Quick install (recommended)
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+          
+          # Or download specific version
+          export MF_VERSION=${VERSION}
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+          \`\`\`
+          
+          **Full Changelog**: https://github.com/${{ github.repository }}/releases/tag/v${VERSION}
+          EOF
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ inputs.version }}
+          name: Release v${{ inputs.version }}
+          body_path: release_notes.md
+          files: dist/*
+          draft: false
+          prerelease: ${{ contains(inputs.version, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-docs:
+    name: Update Documentation
+    needs: [manual-release, create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update version in docs
+        run: |
+          VERSION="${{ inputs.version }}"
+          find docs -type f -name "*.md" -exec sed -i "s/version: [0-9.]\+/version: $VERSION/g" {} + 2>/dev/null || true
+          
+          if git diff --quiet; then
+            echo "No documentation changes needed"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/
+            git commit -m "docs: update version to $VERSION [skip ci]"
+            git push
+          fi
+
+  deploy-pages:
+    name: Deploy GitHub Pages
+    needs: [manual-release, create-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ inputs.version }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prepare public site
+        run: |
+          DEPLOY_DIR="public-deploy"
+          VERSION="${{ inputs.version }}"
+          mkdir -p "$DEPLOY_DIR"
+          
+          # Update version in public assets
+          if [ -d "public" ]; then
+            cp -r public/* "$DEPLOY_DIR/"
+            sed -i "s/\${VERSION}/$VERSION/g" "$DEPLOY_DIR"/*.html 2>/dev/null || true
+          fi
+          
+          touch "$DEPLOY_DIR/.nojekyll"
+          echo "$VERSION" > "$DEPLOY_DIR/VERSION"
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public-deploy
+          publish_branch: gh-pages
+          keep_files: false
+
+  notify:
+    name: Notify Release
+    needs: [manual-release, create-release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Report status
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ "${{ needs.create-release.result }}" = "success" ]; then
+            echo "✓ Successfully released version $VERSION"
+            echo "  GitHub: https://github.com/${{ github.repository }}/releases/tag/v$VERSION"
+            echo "  Install: curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash"
+          else
+            echo "✗ Release failed for version $VERSION"
+            exit 1
+          fi
