@@ -87,13 +87,13 @@ check_dependencies() {
                 for dep in "${missing[@]}"; do
                     case "$dep" in
                         python3)
-                            $SUDO_CMD apt install -y python3 python3-venv 2>/dev/null || log_warning "Failed to install python3"
+                            $SUDO_CMD apt install -y python3 python3-venv 2>/dev/null || log_warn "Failed to install python3"
                             ;;
                         pip)
-                            $SUDO_CMD apt install -y python3-pip 2>/dev/null || log_warning "Failed to install pip"
+                            $SUDO_CMD apt install -y python3-pip 2>/dev/null || log_warn "Failed to install pip"
                             ;;
                         git)
-                            $SUDO_CMD apt install -y git 2>/dev/null || log_warning "Failed to install git"
+                            $SUDO_CMD apt install -y git 2>/dev/null || log_warn "Failed to install git"
                             ;;
                     esac
                 done
@@ -223,7 +223,7 @@ install_via_pip() {
     # Try user install with break-system-packages; fallback to venv if still blocked
     if ! PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_BREAK_SYSTEM_PACKAGES=1 "${pip_cmd[@]}" install --user --break-system-packages -e . 2>/dev/null; then
         if ! PIP_DISABLE_PIP_VERSION_CHECK=1 "${pip_cmd[@]}" install --user -e . 2>/dev/null; then
-            log_warning "User install blocked by PEP 668. Falling back to isolated venv."
+            log_warn "User install blocked by PEP 668. Falling back to isolated venv."
             local VENV_DIR="$HOME/.local/share/mf07-language-venv"
             python3 -m venv "$VENV_DIR" || { log_error "Failed to create venv"; exit 1; }
             "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
