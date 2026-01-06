@@ -127,7 +127,7 @@ install_via_pip() {
             exit 1
         fi
         
-        cd "mf07-language-$VERSION" 2>/dev/null || cd "mf07-core-compiler-$VERSION" 2>/dev/null || {
+        cd "mf07-language-$VERSION" 2>/dev/null || {
             log_error "Failed to extract archive"
             exit 1
         }
