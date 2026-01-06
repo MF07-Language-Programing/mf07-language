@@ -214,17 +214,19 @@ install_via_pip() {
     cd mf07* 2>/dev/null || true
     
     # Decide how to invoke pip (avoid installing as root when running via sudo)
-    local pip_runner="python3 -m pip"
-    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
-        pip_runner="sudo -u \"$SUDO_USER\" -E python3 -m pip"
-    fi
+        # Run pip as invoking user (when sudo) to avoid system-wide install
+        local py_cmd="python3"
+        local pip_cmd=("$py_cmd" -m pip)
+        if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+            pip_cmd=(sudo -u "$SUDO_USER" -E "$py_cmd" -m pip)
+        fi
 
-    # Always use 'python3 -m pip' with user install; allow break-system-packages for Debian/Ubuntu
-    PIP_BREAK_SYSTEM_PACKAGES=1 PIP_DISABLE_PIP_VERSION_CHECK=1 eval "$pip_runner install --user --break-system-packages -e ." 2>/dev/null || \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 eval "$pip_runner install --user -e ." || {
-        log_error "Installation failed"
-        exit 1
-    }
+        # Allow break-system-packages (PEP 668) with --user, fallback if flag unsupported
+        PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_BREAK_SYSTEM_PACKAGES=1 "${pip_cmd[@]}" install --user --break-system-packages -e . 2>/dev/null || \
+        PIP_DISABLE_PIP_VERSION_CHECK=1 "${pip_cmd[@]}" install --user -e . || {
+            log_error "Installation failed"
+            exit 1
+        }
     
     cd - > /dev/null
     rm -rf "$tmp_dir"
