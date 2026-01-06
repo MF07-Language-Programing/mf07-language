@@ -1,11 +1,7 @@
 name: Documentation
 
 on:
-  push:
-    branches: [main, develop]
   workflow_dispatch:
-  pull_request:
-    branches: [main]
 
 jobs:
   build-docs:
