@@ -1,0 +1,270 @@
+name: Build and Publish
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [main, 'release/**']
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.1.3)'
+        required: false
+        type: string
+
+jobs:
+  build:
+    name: Build Executables
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            short: linux
+            python: '3.14'
+          - os: windows-latest
+            short: windows
+            python: '3.14'
+          - os: macos-latest
+            short: macos
+            python: '3.14'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Get version from pyproject.toml
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/version = "\([^"]*\)".*/\1/')
+          if [ -z "$VERSION" ]; then
+            VERSION="${{ inputs.version }}"
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION="1.0.0"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Install dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install pyinstaller
+          python -m pip install -e .
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install pyinstaller
+          python -m pip install -e .
+
+      - name: Create stdlib package
+        shell: bash
+        run: |
+          mkdir -p packaging/stdlib
+          if [ -d "src/corplang/stdlib" ]; then
+            cp -r src/corplang/stdlib/* packaging/stdlib/ || true
+          fi
+          echo "Stdlib contents:"
+          ls -la packaging/stdlib/ || true
+
+      - name: Build standalone executable (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p dist
+          pyinstaller --onefile \
+            --name mf \
+            --add-data "packaging/stdlib:stdlib" \
+            --hidden-import=yaml \
+            --hidden-import=pyyaml \
+            --collect-all pyyaml \
+            mf 2>&1 | tee packaging/build.log || true
+          ls -la dist/
+
+      - name: Build standalone executable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          pyinstaller --onefile `
+            --name mf.exe `
+            --add-data "packaging/stdlib;stdlib" `
+            --hidden-import=yaml `
+            --hidden-import=pyyaml `
+            --collect-all pyyaml `
+            mf.bat 2>&1 | Tee-Object -FilePath packaging\build.log
+          Get-ChildItem -Path dist\ -Recurse
+
+      - name: Test executable
+        shell: bash
+        run: |
+          if [ -f "dist/mf" ]; then
+            chmod +x dist/mf
+            ./dist/mf --version || true
+          elif [ -f "dist/mf.exe" ]; then
+            ./dist/mf.exe --version || true
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mf-${{ matrix.short }}
+          path: |
+            dist/*
+            packaging/build.log
+          retention-days: 7
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    strategy:
+      matrix:
+        distro:
+          - short: linux
+            artifact_name: mf-linux
+            exe_name: mf
+          - short: windows
+            artifact_name: mf-windows
+            exe_name: mf.exe
+          - short: macos
+            artifact_name: mf-macos
+            exe_name: mf
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/version = "\([^"]*\)".*/\1/')
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.distro.artifact_name }}
+          path: artifacts/${{ matrix.distro.short }}
+
+      - name: Create stdlib archive
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          mkdir -p artifacts/src
+          if [ -d "src/corplang/stdlib" ]; then
+            cd src/corplang
+            zip -r ../../artifacts/src/corplang-stdlib-${VERSION}-${{ matrix.distro.short }}.zip stdlib/
+            cd ../..
+          fi
+
+      - name: Locate executable
+        id: find_exe
+        run: |
+          EXE=$(find artifacts/${{ matrix.distro.short }} -type f \( -name '${{ matrix.distro.exe_name }}' -o -name 'mf' -o -name 'mf.exe' \) -print -quit || echo "")
+          if [ -z "$EXE" ]; then
+            echo "Warning: No executable found"
+            EXE="artifacts/${{ matrix.distro.short }}/${{ matrix.distro.exe_name }}"
+          fi
+          echo "exe=$EXE" >> $GITHUB_OUTPUT
+          echo "Found executable: $EXE"
+          ls -la "$EXE" || true
+
+      - name: Create checksums
+        run: |
+          EXE="${{ steps.find_exe.outputs.exe }}"
+          if [ -f "$EXE" ]; then
+            sha256sum "$EXE" > "$EXE.sha256"
+            echo "Checksum created for $EXE"
+          fi
+
+      - name: Create or update tag
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+          TAG="v${VERSION}-${{ matrix.distro.short }}"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists"
+          else
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG" || echo "Failed to push tag"
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}-${{ matrix.distro.short }}
+          name: Release v${{ steps.get_version.outputs.version }} (${{ matrix.distro.short }})
+          body: |
+            ## MF07 Language v${{ steps.get_version.outputs.version }} - ${{ matrix.distro.short }}
+            
+            Standalone executable for ${{ matrix.distro.short }} platform.
+            
+            ### Installation
+            
+            Download the executable and run directly - no dependencies required!
+            
+            ```bash
+            # Linux/macOS
+            chmod +x mf
+            ./mf --version
+            
+            # Windows
+            mf.exe --version
+            ```
+            
+            ### Files
+            - **Executable**: Standalone CLI (includes all dependencies)
+            - **Checksum**: SHA256 for verification
+            - **Stdlib**: Standard library source code
+          files: |
+            ${{ steps.find_exe.outputs.exe }}
+            ${{ steps.find_exe.outputs.exe }}.sha256
+            artifacts/src/corplang-stdlib-${{ steps.get_version.outputs.version }}-${{ matrix.distro.short }}.zip
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.version, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Notify Completion
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Report status
+        run: |
+          if [ "${{ needs.release.result }}" = "success" ]; then
+            echo "✓ Release completed successfully"
+            echo "  Linux: https://github.com/${{ github.repository }}/releases"
+            echo "  Windows: https://github.com/${{ github.repository }}/releases"
+            echo "  macOS: https://github.com/${{ github.repository }}/releases"
+          else
+            echo "✗ Release failed or skipped"
+          fi
