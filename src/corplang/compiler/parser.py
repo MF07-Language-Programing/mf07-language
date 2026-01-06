@@ -101,6 +101,9 @@ class Parser(ParserSampler):
 
     def parse_top_level(self, parent: Optional[Any] = None) -> Any:
         """Dispatches to specialized top-level declarations or statements."""
+        # Skip blank lines/newlines to align on real tokens
+        while self.stream.current and self.stream.current.type == TokenType.NEWLINE:
+            self.stream.advance()
         tok = self.stream.current
         if not tok:
             return None

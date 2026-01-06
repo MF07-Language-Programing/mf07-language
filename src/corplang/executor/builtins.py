@@ -3,6 +3,8 @@
 import base64
 import hashlib
 import json
+import os
+import sys
 import time
 from typing import Any, Dict
 
@@ -294,6 +296,40 @@ def setup_builtins(interpreter) -> None:
             pass
         raise interpreter.error_class(f"Unknown expected type '{et}' for input()", RuntimeErrorType.TYPE_ERROR)
 
+    def _console_clear():
+        try:
+            sys.stdout.write("\033[2J\033[H")
+            sys.stdout.flush()
+        except Exception:
+            try:
+                os.system("cls" if os.name == "nt" else "clear")
+            except Exception:
+                pass
+        return None
+
+    def _console_write(text: Any = "", end: str = "", flush: bool = True):
+        try:
+            sys.stdout.write("" if text is None else str(text))
+            sys.stdout.write("" if end is None else str(end))
+            if flush:
+                sys.stdout.flush()
+            return None
+        except Exception as e:
+            raise interpreter.error_class(f"console.write failed: {e}", RuntimeErrorType.RUNTIME_ERROR)
+
+    def _console_writeln(text: Any = "", end: str = "\n", flush: bool = True):
+        return _console_write(text, end=end, flush=flush)
+
+    def _console_bullet(text: Any = "", prefix: str = "* ", end: str = "\n", flush: bool = True):
+        return _console_write(f"{prefix}{'' if text is None else text}", end=end, flush=flush)
+
+    def _console_flush():
+        try:
+            sys.stdout.flush()
+        except Exception:
+            pass
+        return None
+
     # Small utility namespace
     def _safe_b64_decode(s: Any) -> str:
         try:
@@ -322,6 +358,14 @@ def setup_builtins(interpreter) -> None:
         "to_timestamp": lambda native_dt: native_dt.timestamp() if hasattr(native_dt, 'timestamp') else None,
     }
 
+    mf_console = {
+        "clear": _console_clear,
+        "write": _console_write,
+        "writeln": _console_writeln,
+        "bullet": _console_bullet,
+        "flush": _console_flush,
+    }
+
     mf_objects = {
         "Map": lambda: {},
         "keys": lambda d: list(d.keys()) if isinstance(d, dict) else [],
@@ -336,6 +380,7 @@ def setup_builtins(interpreter) -> None:
         "json": mf_json,
         "hash": mf_hash,
         "datetime": mf_datetime,
+        "console": mf_console,
         "objects": mf_objects,
         "utils": {},
         "random": {},
@@ -371,6 +416,7 @@ def setup_builtins(interpreter) -> None:
     ge.define("mf.json", mf_json, "object")
     ge.define("mf.hash", mf_hash, "module")
     ge.define("mf.datetime", mf_datetime, "module")
+    ge.define("mf.console", mf_console, "module")
     ge.define("mf.objects", mf_objects, "module")
 
     # Ensure native exception classes are globally visible for typed catch/throw

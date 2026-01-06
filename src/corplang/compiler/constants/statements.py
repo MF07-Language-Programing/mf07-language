@@ -77,7 +77,15 @@ def parse_loop_statement(ctx: PositionTracker, parent: Optional[Any] = None) -> 
         )
             
     node = LoopStatement(body=[], line=tok.line, column=tok.column, file_path=ctx.source_file, parent=parent)
-    node.body = parse_block(ctx, node)
+    # Allow single-statement bodies without braces
+    if stream.current and stream.current.type == TokenType.LBRACE:
+        node.body = parse_block(ctx, node)
+    else:
+        # Skip blank lines before single-statement bodies
+        while stream.current and stream.current.type == TokenType.NEWLINE:
+            stream.advance()
+        stmt = ctx.parse_statement(node)
+        node.body = [stmt] if stmt else []
     return node
 
 def parse_serve_statement(ctx: PositionTracker, parent: Optional[Any] = None) -> ServeStatement:
@@ -212,7 +220,15 @@ def parse_standard_for_statement(ctx: PositionTracker, for_tok: Any, parent: Opt
     if condition and hasattr(condition, 'parent'): condition.parent = node
     if step and hasattr(step, 'parent'): step.parent = node
     
-    node.body = parse_block(ctx, node)
+    # Allow single-statement bodies without braces
+    if stream.current and stream.current.type == TokenType.LBRACE:
+        node.body = parse_block(ctx, node)
+    else:
+        # Skip blank lines before single-statement bodies
+        while stream.current and stream.current.type == TokenType.NEWLINE:
+            stream.advance()
+        stmt = ctx.parse_statement(node)
+        node.body = [stmt] if stmt else []
     return node
 
 def parse_for_of_statement(ctx: PositionTracker, for_tok: Any, parent: Optional[Any] = None) -> ForOfStatement:

@@ -484,7 +484,14 @@ class Interpreter:
         """Push a language-level frame onto the interpreter call stack."""
         # Store both the declared line and the node-origin line to allow later
         # diagnostics to prefer the most precise execution location.
-        resolved_file = file or origin_file or getattr(node, "file", None) or self.current_file
+        resolved_file = (
+            file
+            or origin_file
+            or getattr(node, "file", None)
+            or getattr(node, "file_path", None)
+            or getattr(node, "source_file", None)
+            or self.current_file
+        )
         declared_line = line or getattr(node, "line", None)
         origin_line_final = origin_line
         frame = {
@@ -540,7 +547,12 @@ class Interpreter:
         pushed_node_frame = False
         try:
             try:
-                node_file = getattr(node, "file", None) or getattr(node, "source_file", None) or self.current_file
+                node_file = (
+                    getattr(node, "file", None)
+                    or getattr(node, "file_path", None)
+                    or getattr(node, "source_file", None)
+                    or self.current_file
+                )
                 node_line = getattr(node, "line", None)
                 # For Identifiers, use the node type, not the name (which is the variable being accessed)
                 node_type = type(node).__name__

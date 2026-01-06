@@ -131,6 +131,9 @@ def parse_block(ctx: PositionTracker, parent: Optional[Any] = None) -> List[Any]
     stream.expect(TokenType.LBRACE)
     body: List[Any] = []
     while stream.current and stream.current.type != TokenType.RBRACE:
+        if stream.current.type == TokenType.NEWLINE:
+            stream.advance()
+            continue
         start_pos = stream.pos
         try:
             stmt = ctx.parse_statement(parent)
@@ -148,12 +151,11 @@ def parse_block(ctx: PositionTracker, parent: Optional[Any] = None) -> List[Any]
             
     stream.expect(TokenType.RBRACE)
     
-    # Apply semantic hoisting for variable declarations in conditional branches
-    # But avoid hoisting inside loops to prevent variable scope issues across iterations
-    parent_type = type(parent).__name__ if parent else None
-    if parent_type in ("FunctionDeclaration", "MethodDeclaration", "LambdaExpression"):
-        from src.corplang.compiler.scope import BlockScopeHoister
-        body = BlockScopeHoister.apply_hoisting(body, parent)
+    # Hoisting desativado: estava removendo declarações válidas em blocos comuns
+    # parent_type = type(parent).__name__ if parent else None
+    # if parent_type in ("FunctionDeclaration", "MethodDeclaration", "LambdaExpression"):
+    #     from src.corplang.compiler.scope import BlockScopeHoister
+    #     body = BlockScopeHoister.apply_hoisting(body, parent)
     
     return body
 
