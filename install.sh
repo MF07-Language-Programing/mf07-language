@@ -230,6 +230,16 @@ install_via_pip() {
         if ! PIP_DISABLE_PIP_VERSION_CHECK=1 "${pip_cmd[@]}" install --user -e . 2>/dev/null; then
             log_warn "User install blocked by PEP 668. Falling back to isolated venv."
             local VENV_DIR="$HOME/.local/share/mf07-language-venv"
+
+            # Ensure python3-venv is available (Debian/Ubuntu minimal images may miss it)
+            if ! python3 -m venv --help >/dev/null 2>&1; then
+                if command -v apt &>/dev/null; then
+                    log_info "Installing python3-venv for virtualenv support..."
+                    sudo apt update -qq >/dev/null 2>&1 || true
+                    sudo apt install -y python3-venv python3-distutils python3-ensurepip >/dev/null 2>&1 || true
+                fi
+            fi
+
             python3 -m venv "$VENV_DIR" || { log_error "Failed to create venv"; exit 1; }
             "$VENV_DIR/bin/pip" install --upgrade pip setuptools wheel >/dev/null 2>&1 || true
             "$VENV_DIR/bin/pip" install -e . || { log_error "Venv install failed"; exit 1; }
