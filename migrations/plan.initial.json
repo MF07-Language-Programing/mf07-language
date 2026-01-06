@@ -1,0 +1,82 @@
+{
+  "ops": [
+    {
+      "op": "create_enum",
+      "name": "OrderStatus",
+      "values": [
+        [
+          "PENDING",
+          "PENDING"
+        ],
+        [
+          "IN_PROGRESS",
+          "IN_PROGRESS"
+        ],
+        [
+          "FINISHED",
+          "FINISHED"
+        ],
+        [
+          "CANCELED",
+          "CANCELED"
+        ]
+      ]
+    },
+    {
+      "op": "create_model",
+      "model": "Order",
+      "table": "orders",
+      "fields": [
+        {
+          "name": "id",
+          "type": "AutoField",
+          "params": [],
+          "kwargs": {}
+        },
+        {
+          "name": "user",
+          "type": "ForeignKey",
+          "params": [
+            "User"
+          ],
+          "kwargs": {}
+        },
+        {
+          "name": "status",
+          "type": "EnumField",
+          "params": [
+            "OrderStatus"
+          ],
+          "kwargs": {
+            "default": "OrderStatus.PENDING"
+          }
+        },
+        {
+          "name": "total",
+          "type": "DecimalField",
+          "params": [
+            10,
+            2
+          ],
+          "kwargs": {}
+        },
+        {
+          "name": "created_at",
+          "type": "DateTimeField",
+          "params": [],
+          "kwargs": {
+            "auto_now_add": true
+          }
+        }
+      ]
+    },
+    {
+      "op": "add_fk",
+      "kind": "fk",
+      "from": "Order",
+      "field": "user",
+      "to": "User",
+      "on_delete": "CASCADE"
+    }
+  ]
+}
