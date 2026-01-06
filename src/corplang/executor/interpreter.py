@@ -30,6 +30,25 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+def _find_installed_stdlib() -> Optional[Path]:
+    """Find stdlib in installed package using sys.prefix."""
+    import sys
+
+    candidates = [
+        Path(sys.prefix) / "src" / "corplang" / "stdlib",
+        Path(sys.prefix) / "lib" / "python3.10" / "site-packages" / "src" / "corplang" / "stdlib",
+        Path(sys.prefix) / "lib" / "python3.11" / "site-packages" / "src" / "corplang" / "stdlib",
+        Path(sys.prefix) / "lib" / "python3.12" / "site-packages" / "src" / "corplang" / "stdlib",
+        Path(__file__).resolve().parent.parent / "stdlib",
+    ]
+
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+
+    return None
+
+
 def _stdlib_roots() -> list[Path]:
     roots: list[Path] = []
 
@@ -40,6 +59,10 @@ def _stdlib_roots() -> list[Path]:
     active = os.environ.get("CORPLANG_ACTIVE_VERSION")
     if active and active != "local":
         roots.append(Path.home() / ".corplang" / "versions" / active / "src" / "corplang" / "stdlib")
+
+    installed = _find_installed_stdlib()
+    if installed:
+        roots.append(installed)
 
     roots.append(_repo_root() / "src" / "corplang" / "stdlib")
 

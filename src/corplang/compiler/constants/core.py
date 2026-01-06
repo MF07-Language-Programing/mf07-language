@@ -147,6 +147,14 @@ def parse_block(ctx: PositionTracker, parent: Optional[Any] = None) -> List[Any]
             stream.advance()
             
     stream.expect(TokenType.RBRACE)
+    
+    # Apply semantic hoisting for variable declarations in conditional branches
+    # Only apply hoisting if parent is a function/method, not at module level
+    parent_type = type(parent).__name__ if parent else None
+    if parent_type in ("FunctionDeclaration", "MethodDeclaration", "LambdaExpression"):
+        from src.corplang.compiler.scope import BlockScopeHoister
+        body = BlockScopeHoister.apply_hoisting(body)
+    
     return body
 
 

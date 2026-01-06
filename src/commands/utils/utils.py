@@ -103,12 +103,12 @@ class PathResolver:
     @staticmethod
     def resolve_relative_path(file_path: str, base_dir: Optional[Path] = None) -> Path:
         """Resolve path relative to base_dir or current directory."""
-        if not base_dir:
-            base_dir = Path.cwd()
-
         path = Path(file_path)
         if path.is_absolute():
-            return path
+            return path.resolve()
+
+        if not base_dir:
+            base_dir = Path.cwd()
 
         resolved = (base_dir / path).resolve()
         return resolved
