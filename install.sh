@@ -139,18 +139,18 @@ ensure_python() {
     if [ -z "$PYTHON_CMD" ]; then
         log_warn "Falling back to bundled python3.14 using uv (no sudo)."
         local UV_DIR="$HOME/.local/share/mf07-uv"
-        local UV_BIN="$UV_DIR/bin/uv"
+        local UV_BIN="$UV_DIR/uv"
         if [ ! -x "$UV_BIN" ]; then
             log_info "Installing uv package manager..."
             local UV_URL="https://astral.sh/uv/install.sh"
             mkdir -p "$UV_DIR"
             if command -v curl >/dev/null 2>&1; then
-                curl -fsSL "$UV_URL" | env UV_INSTALL_DIR="$UV_DIR" sh -s -- --disable-modify-path || {
+                curl -fsSL "$UV_URL" | env UV_INSTALL_DIR="$UV_DIR" sh >/dev/null 2>&1 || {
                     log_error "Failed to install uv"
                     exit 1
                 }
             elif command -v wget >/dev/null 2>&1; then
-                wget -qO- "$UV_URL" | env UV_INSTALL_DIR="$UV_DIR" sh -s -- --disable-modify-path || {
+                wget -qO- "$UV_URL" | env UV_INSTALL_DIR="$UV_DIR" sh >/dev/null 2>&1 || {
                     log_error "Failed to install uv"
                     exit 1
                 }
@@ -162,7 +162,9 @@ ensure_python() {
 
         if [ -x "$UV_BIN" ]; then
             log_info "Downloading python3.14 (this may take a moment)..."
-            UV_PYTHON_INSTALL_DIR="$UV_DIR/python" "$UV_BIN" python install 3.14 || {
+            local UV_PYTHON_DIR="$UV_DIR/python"
+            mkdir -p "$UV_PYTHON_DIR"
+            UV_PYTHON_INSTALL_DIR="$UV_PYTHON_DIR" "$UV_BIN" python install 3.14 >/dev/null 2>&1 || {
                 log_error "Failed to install python3.14 via uv"
                 exit 1
             }
