@@ -49,6 +49,22 @@ def _find_installed_stdlib() -> Optional[Path]:
     return None
 
 
+def _resolve_active_version_from_file() -> Optional[str]:
+    try:
+        env_file = Path.home() / ".corplang" / "version.env"
+        if env_file.exists():
+            for line in env_file.read_text().splitlines():
+                line = line.strip()
+                if line.startswith("export CORPLANG_ACTIVE_VERSION="):
+                    value = line.split("=", 1)[1].strip()
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    return value
+    except Exception:
+        pass
+    return None
+
+
 def _stdlib_roots() -> list[Path]:
     roots: list[Path] = []
 
@@ -56,7 +72,8 @@ def _stdlib_roots() -> list[Path]:
     if custom:
         roots.append(Path(custom))
 
-    active = os.environ.get("CORPLANG_ACTIVE_VERSION")
+    # Prefer persisted active version so latest CLI selection wins
+    active = _resolve_active_version_from_file() or os.environ.get("CORPLANG_ACTIVE_VERSION")
     if active and active != "local":
         roots.append(Path.home() / ".corplang" / "versions" / active / "src" / "corplang" / "stdlib")
 
