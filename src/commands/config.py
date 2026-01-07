@@ -327,6 +327,50 @@ class VersionManager:
                     except Exception:
                         pass
 
+                # Auto-env hook: reload CORPLANG_ACTIVE_VERSION at every prompt (bash/zsh)
+                try:
+                    sentinel = "# corplang-auto-env-posix"
+                    autoenv = home / "autoenv.sh"
+                    autoenv_block = (
+                        f"{sentinel}\n"
+                        "_corplang_env_file=\"$HOME/.corplang/version.env\"\n"
+                        "_corplang_load_env() {\n"
+                        "  if [ -f \"$_corplang_env_file\" ]; then\n"
+                        "    set -a\n"
+                        "    . \"$_corplang_env_file\"\n"
+                        "    set +a\n"
+                        "  fi\n"
+                        "}\n"
+                        "_corplang_install_hooks() {\n"
+                        "  if [ -n \"${ZSH_VERSION:-}\" ]; then\n"
+                        "    autoload -Uz add-zsh-hook 2>/dev/null || true\n"
+                        "    add-zsh-hook precmd _corplang_load_env 2>/dev/null || true\n"
+                        "  else\n"
+                        "    case :${PROMPT_COMMAND:-}: in\n"
+                        "      *:_corplang_load_env:*) : ;;\n"
+                        "      *) PROMPT_COMMAND=\"_corplang_load_env${PROMPT_COMMAND:+;$PROMPT_COMMAND}\" ;;\n"
+                        "    esac\n"
+                        "  fi\n"
+                        "}\n"
+                        "_corplang_install_hooks\n"
+                        "_corplang_load_env\n"
+                    )
+                    autoenv.write_text(autoenv_block)
+
+                    hook_line = 'source "$HOME/.corplang/autoenv.sh"  # corplang-auto-env-posix'
+                    for rc in [Path.home() / ".bashrc", Path.home() / ".zshrc"]:
+                        try:
+                            content = rc.read_text() if rc.exists() else ""
+                            if "corplang-auto-env-posix" not in content:
+                                with rc.open("a") as f:
+                                    if content and not content.endswith("\n"):
+                                        f.write("\n")
+                                    f.write(f"\n{hook_line}\n")
+                        except Exception:
+                            continue
+                except Exception:
+                    pass
+
             elif system == "windows":
                 # Create cmd shim in corplang home
                 shim = home / "mf.cmd"
@@ -513,6 +557,20 @@ class VersionManager:
     @staticmethod
     def get_active_version() -> Optional[str]:
         """Get an active version from env or config."""
+        # Prefer persisted env file (~/.corplang/version.env) so latest "set" wins
+        try:
+            env_file = Path.home() / ".corplang" / "version.env"
+            if env_file.exists():
+                for line in env_file.read_text().splitlines():
+                    line = line.strip()
+                    if line.startswith("export CORPLANG_ACTIVE_VERSION="):
+                        value = line.split("=", 1)[1].strip()
+                        if value.startswith("\"") and value.endswith("\""):
+                            value = value[1:-1]
+                        return value
+        except Exception:
+            pass
+
         active = os.environ.get("CORPLANG_ACTIVE_VERSION")
         if active:
             return active

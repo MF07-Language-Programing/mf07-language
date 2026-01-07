@@ -126,7 +126,6 @@ def set_version(version: str) -> CLIResult:
         # Best-effort: inject export into current interactive POSIX shell
         injected = False
         try:
-            import os as _os
             import sys as _sys
             import platform as _platform
             if _sys.stdin.isatty() and _platform.system().lower() in ("linux", "darwin"):
@@ -147,11 +146,9 @@ def set_version(version: str) -> CLIResult:
             Output.step("Loaded in current shell automatically")
             return CLIResult(success=True, message=f"Version {version} is now active")
 
-        # Fallback hint when injection isn't supported
-        export_cmd = f'export CORPLANG_ACTIVE_VERSION="{version}"'
-        Output.step("To load immediately in this shell:")
-        print(f'  eval "{export_cmd}"')
-        return CLIResult(success=True, message=f"Version {version} is now active (reload needed)")
+        # Fallback: auto-env hooks will refresh on next prompt (bash/zsh/PowerShell)
+        Output.step("Auto-load scheduled via shell hook (next prompt)")
+        return CLIResult(success=True, message=f"Version {version} is now active")
     else:
         return CLIResult(
             success=False,
