@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Tuple
 
 
 _ENUM_BLOCK_RE = re.compile(r"enum\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\{(?P<body>.*?)\}", re.DOTALL)
-_MODEL_RE = re.compile(r"model\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s+extends\s+Model\s*\{(?P<body>.*?)\}", re.DOTALL)
+_MODEL_RE = re.compile(r"model\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s+extends\s+(?P<base>Model|BaseModel)\s*\{(?P<body>.*?)\}", re.DOTALL)
 
 
 def _parse_enum_block(body: str) -> List[Tuple[str, str]]:

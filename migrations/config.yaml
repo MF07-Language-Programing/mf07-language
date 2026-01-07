@@ -1,5 +1,0 @@
-# Database migration configuration
-        driver: null
-        dsn: null
-        auto_discover: true
-        

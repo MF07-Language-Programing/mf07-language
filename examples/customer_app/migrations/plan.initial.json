@@ -1,0 +1,33 @@
+{
+  "ops": [
+    {
+      "op": "create_model",
+      "model": "User",
+      "table": "users",
+      "fields": [
+        {
+          "name": "id",
+          "type": "AutoField",
+          "params": [],
+          "kwargs": {}
+        },
+        {
+          "name": "name",
+          "type": "CharField",
+          "params": [
+            120
+          ],
+          "kwargs": {}
+        },
+        {
+          "name": "email",
+          "type": "CharField",
+          "params": [
+            120
+          ],
+          "kwargs": {}
+        }
+      ]
+    }
+  ]
+}

@@ -369,7 +369,7 @@ class VersionManager:
                         "      }\n"
                         "    }\n"
                         "  } catch {}\n"
-                        "  Microsoft.PowerShell.Utility\Get-Location | ForEach-Object { \"$($_)> \" }\n"
+                        "  Microsoft.PowerShell.Utility\\Get-Location | ForEach-Object { \"$($_)> \" }\n"
                         "}\n"
                     )
 

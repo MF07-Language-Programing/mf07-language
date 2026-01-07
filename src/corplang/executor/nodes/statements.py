@@ -410,6 +410,17 @@ class ImportDeclarationExecutor(NodeExecutor):
                 "ImportDeclaration missing module name", RuntimeErrorType.SYNTAX_ERROR
             )
 
+        # Hook: auto-load DB models on "import db"
+        if module_name == "db":
+            self._load_db_models(context)
+            # db is a builtin, not a module file - get from global_env
+            db_obj = context.interpreter.global_env.get("db")
+            if db_obj:
+                context.define_var("db", db_obj, "object")
+                return db_obj
+            else:
+                raise CorpLangRuntimeError("db builtin not initialized", RuntimeErrorType.REFERENCE_ERROR)
+
         exports = context.interpreter._import_module(module_name, context.current_file)
 
         parts = module_name.split(".") if isinstance(module_name, str) else [str(module_name)]
@@ -432,6 +443,22 @@ class ImportDeclarationExecutor(NodeExecutor):
         else:
             context.define_var(root, module_obj, "module")
         return exports
+
+    def _load_db_models(self, context: ExecutionContext):
+        from pathlib import Path
+        from src.corplang.executor.db import runtime as db_runtime
+
+        cwd = Path.cwd()
+        models_path = cwd / "models.mp"
+        if not models_path.is_file():
+            return
+
+        try:
+            models = db_runtime.load_models_from_file(models_path)
+            for model_name, model_class in models.items():
+                context.define_var(model_name, model_class, "class")
+        except Exception:
+            pass
 
 
 class FromImportDeclarationExecutor(NodeExecutor):

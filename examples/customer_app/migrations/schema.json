@@ -1,0 +1,14 @@
+{
+  "enums": {},
+  "models": {
+    "User": {
+      "table": "users",
+      "fields": [
+        "id",
+        "name",
+        "email"
+      ]
+    }
+  },
+  "relations": []
+}

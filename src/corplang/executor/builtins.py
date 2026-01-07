@@ -376,12 +376,24 @@ def setup_builtins(interpreter) -> None:
         "mapRemove": lambda d, k: d.pop(k, None) if isinstance(d, dict) else None,
     }
 
+    from src.corplang.executor.db import runtime as db_runtime
+
+    class DBNamespace:
+        def __init__(self):
+            self.connect = db_runtime.connect
+
+    mf_db = DBNamespace()
+
+    # Base model class for user code
+    BaseModel = db_runtime.BaseModel
+
     mf_namespace: Dict[str, Any] = {
         "json": mf_json,
         "hash": mf_hash,
         "datetime": mf_datetime,
         "console": mf_console,
         "objects": mf_objects,
+        "db": mf_db,
         "utils": {},
         "random": {},
         "http": None,
@@ -418,6 +430,10 @@ def setup_builtins(interpreter) -> None:
     ge.define("mf.datetime", mf_datetime, "module")
     ge.define("mf.console", mf_console, "module")
     ge.define("mf.objects", mf_objects, "module")
+    ge.define("db", mf_db, "object")
+    
+    # Register BaseModel for user models
+    ge.define("BaseModel", BaseModel, "class")
 
     # Ensure native exception classes are globally visible for typed catch/throw
     try:

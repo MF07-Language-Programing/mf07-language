@@ -20,7 +20,6 @@
     "core.collections.iterators",
     "core.collections.list",
     "core.collections.map",
-    "core.map",
     "core.collections.ordered_map",
     "core.collections.queue",
     "core.collections.set",
