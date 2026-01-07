@@ -59,7 +59,9 @@ out/
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
+**/__pycache__/
 *.py[cod]
+**/*.pyc
 *$py.class
 # Explicit ignores for compiled artifacts inside src (prevents publish noise)
 src/corplang/**/__pycache__/
@@ -566,6 +568,7 @@ FakesAssemblies/
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 node_modules/
+scripts/
 
 # Visual Studio 6 build log
 *.plg
@@ -584,6 +587,10 @@ node_modules/
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
 
+*/__pycache__/
+*/**/__pycache__/
+*.py[cod]
+*$py.class
 # Paket dependency manager
 .paket/paket.exe
 paket-files/
