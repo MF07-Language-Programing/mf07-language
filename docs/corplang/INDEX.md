@@ -4,6 +4,14 @@ Este índice organiza toda a documentação disponível para facilitar sua naveg
 
 ## 📖 Por Categoria
 
+### 🧪 Tutoriais Práticos
+Aprenda criando sistemas úteis do zero.
+
+- [Tutorial 1 — CLI To‑Do](../tutorials/01-cli-todo.md)
+- [Tutorial 2 — HTTP JSON API](../tutorials/02-http-json-api.md)
+- [Tutorial 3 — CRUD com SQLite](../tutorials/03-db-crud-sqlite.md)
+- [Tutorial 4 — Agente no Console](../tutorials/04-agent-console.md)
+
 ### 🎓 Guia da Linguagem
 Aprenda a programar em Corplang.
 
