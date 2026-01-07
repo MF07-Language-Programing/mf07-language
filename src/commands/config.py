@@ -22,11 +22,11 @@ class CorplangConfig:
     def get_project_root(start_path: str = ".") -> Optional[Path]:
         """Find the project root by looking for language_config.yaml or manifest.json."""
         current = Path(start_path).resolve()
-        
+
         # If start_path is a file, start from its parent directory
         if current.is_file():
             current = current.parent
-        
+
         for _ in range(10):
             if (current / CorplangConfig.CONFIG_FILE).exists() or \
                     (current / CorplangConfig.MANIFEST_FILE).exists():
@@ -340,6 +340,57 @@ class VersionManager:
                 except Exception:
                     pass
 
+                # PowerShell auto-env: load ~/.corplang/version.env on prompt
+                try:
+                    sentinel = "# corplang-auto-env"
+                    ps_block = (
+                        f"{sentinel}\n"
+                        "function Import-CorplangEnv {\n"
+                        "  $envFile = Join-Path $HOME '.corplang/version.env'\n"
+                        "  if (Test-Path $envFile) {\n"
+                        "    Get-Content $envFile | ForEach-Object {\n"
+                        "      if ($_ -match '^export\\s+(\\w+)=\\\"?(.*)\\\"?$') {\n"
+                        "        $name = $Matches[1]\n"
+                        "        $val  = $Matches[2]\n"
+                        "        Set-Item -Path Env:$name -Value $val\n"
+                        "      }\n"
+                        "    }\n"
+                        "  }\n"
+                        "}\n"
+                        "$script:CorplangEnv_Last = ''\n"
+                        "function global:prompt {\n"
+                        "  try {\n"
+                        "    $envFile = Join-Path $HOME '.corplang/version.env'\n"
+                        "    if (Test-Path $envFile) {\n"
+                        "      $ts = (Get-Item $envFile).LastWriteTimeUtc.Ticks\n"
+                        "      if ($ts -ne $script:CorplangEnv_Last) {\n"
+                        "        $script:CorplangEnv_Last = $ts\n"
+                        "        Import-CorplangEnv\n"
+                        "      }\n"
+                        "    }\n"
+                        "  } catch {}\n"
+                        "  Microsoft.PowerShell.Utility\Get-Location | ForEach-Object { \"$($_)> \" }\n"
+                        "}\n"
+                    )
+
+                    profiles = [
+                        Path.home() / "Documents" / "WindowsPowerShell" / "Microsoft.PowerShell_profile.ps1",
+                        Path.home() / "Documents" / "PowerShell" / "Microsoft.PowerShell_profile.ps1",
+                    ]
+                    for prof in profiles:
+                        try:
+                            prof.parent.mkdir(parents=True, exist_ok=True)
+                            content = prof.read_text(encoding="utf-8") if prof.exists() else ""
+                            if sentinel not in content:
+                                with prof.open("a", encoding="utf-8") as f:
+                                    if content and not content.endswith("\n"):
+                                        f.write("\n")
+                                    f.write("\n" + ps_block + "\n")
+                        except Exception:
+                            continue
+                except Exception:
+                    pass
+
             self.log_action("CLI_ENV", cli_path.name, "SUCCESS", str(cli_path))
             return True
         except Exception as e:
@@ -481,11 +532,11 @@ class VersionManager:
 
         # Set for current process
         os.environ["CORPLANG_ACTIVE_VERSION"] = version
-        
+
         # Persist to shell config and env file
         self._persist_env_var("CORPLANG_ACTIVE_VERSION", version)
         self._save_version_env(version)
-        
+
         self.log_action("SET_ACTIVE", version, "SUCCESS")
 
         project_root = CorplangConfig.get_project_root()
@@ -503,7 +554,7 @@ class VersionManager:
                 pass
 
         return True
-    
+
     def _save_version_env(self, version: str) -> bool:
         """Save version to ~/.corplang/version.env for sourcing."""
         try:
@@ -513,14 +564,14 @@ class VersionManager:
             return True
         except Exception:
             return False
-    
+
     def _persist_env_var(self, var_name: str, value: str) -> bool:
         """Persist environment variable to shell config."""
         import sys
-        
+
         home = Path.home()
         shell_configs = []
-        
+
         # Determine which shell configs to update
         if sys.platform.startswith("linux") or sys.platform == "darwin":
             shell_configs = [
@@ -529,25 +580,25 @@ class VersionManager:
                 home / ".zshrc",
                 home / ".profile",
             ]
-        
+
         export_line = f'export {var_name}="{value}"\n'
-        
+
         for config_file in shell_configs:
             if config_file.exists():
                 try:
                     content = config_file.read_text()
-                    
+
                     # Remove old entries
                     lines = content.split("\n")
                     filtered = [l for l in lines if not l.startswith(f"export {var_name}=")]
-                    
+
                     # Add new entry at the end
                     filtered.append(export_line.rstrip())
-                    
+
                     config_file.write_text("\n".join(filtered))
                 except Exception:
                     continue
-        
+
         return True
 
 

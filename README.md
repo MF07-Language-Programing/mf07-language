@@ -104,6 +104,12 @@ mf versions set 0.2.0
 mf versions set local
 ```
 
+Nota sobre ativação imediata:
+
+- Linux/macOS: o CLI aplica a versão no shell atual automaticamente. Em ambientes com políticas de segurança que bloqueiem injeção no TTY, o CLI mostrará um único comando `eval` de fallback.
+- Windows (PowerShell): a versão é carregada automaticamente ao retorno do prompt via perfil do PowerShell (sem passos manuais). Sessões novas também herdam a configuração.
+- Windows (cmd.exe): recomenda-se usar PowerShell para ativação imediata; novas sessões de cmd herdam a configuração persistida.
+
 #### `mf versions install <version> [--from-url <URL>] [--force]`
 Instala nova versão.
 

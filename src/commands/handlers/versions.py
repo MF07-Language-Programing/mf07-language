@@ -121,16 +121,37 @@ def set_version(version: str) -> CLIResult:
 
     if vm.set_active_version(version):
         Output.success(f"Active version set to {version}")
-        Output.info("Environment variable CORPLANG_ACTIVE_VERSION has been set")
-        
-        # Show command to load in current shell
+        Output.info("Environment variable CORPLANG_ACTIVE_VERSION has been persisted")
+
+        # Best-effort: inject export into current interactive POSIX shell
+        injected = False
+        try:
+            import os as _os
+            import sys as _sys
+            import platform as _platform
+            if _sys.stdin.isatty() and _platform.system().lower() in ("linux", "darwin"):
+                try:
+                    import fcntl as _fcntl
+                    import termios as _termios
+                    with open("/dev/tty", "w") as _tty:
+                        cmd = f'export CORPLANG_ACTIVE_VERSION="{version}"\n'
+                        for ch in cmd:
+                            _fcntl.ioctl(_tty.fileno(), _termios.TIOCSTI, ch)
+                    injected = True
+                except Exception:
+                    injected = False
+        except Exception:
+            injected = False
+
+        if injected:
+            Output.step("Loaded in current shell automatically")
+            return CLIResult(success=True, message=f"Version {version} is now active")
+
+        # Fallback hint when injection isn't supported
         export_cmd = f'export CORPLANG_ACTIVE_VERSION="{version}"'
-        Output.step("Load in current shell:")
+        Output.step("To load immediately in this shell:")
         print(f'  eval "{export_cmd}"')
-        print()
-        print("Or restart your terminal")
-        
-        return CLIResult(success=True, message=f"Version {version} is now active")
+        return CLIResult(success=True, message=f"Version {version} is now active (reload needed)")
     else:
         return CLIResult(
             success=False,
