@@ -1,0 +1,39 @@
+# Corplang Project Configuration
+# Customer Management Application
+
+name: "customer_app"
+description: "Simple customer management application with SQLite database"
+language_version: "0.1.0"
+
+# Module search paths
+module_paths:
+  - ./lib
+  - ./src
+  - ./modules
+
+# Database Configuration
+database:
+  # Driver: sqlite, postgresql
+  driver: "sqlite"
+  # DSN: database connection string
+  # For SQLite: relative path or :memory:
+  # For PostgreSQL: postgresql://user:password@host:port/dbname
+  dsn: "./customers.db"
+
+# Compilation settings
+compile:
+  strict: false
+  target: "3.9"
+  optimize: false
+  native_inline: true
+
+# Runtime settings
+runtime:
+  max_recursion: 10000
+  async_enabled: true
+  memory_limit: 0
+
+# Development settings
+dev:
+  debug: false
+  ui_enabled: true

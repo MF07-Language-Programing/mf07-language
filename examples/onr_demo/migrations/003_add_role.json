@@ -1,0 +1,20 @@
+{
+  "ops": [
+    {
+      "op": "add_column",
+      "model": "Customer",
+      "table": "lt_customers",
+      "field_name": "role",
+      "field_def": {
+        "name": "role",
+        "type": "EnumField",
+        "params": [
+          "UserRole"
+        ],
+        "kwargs": {
+          "default": "UserRole.ADMIN"
+        }
+      }
+    }
+  ]
+}

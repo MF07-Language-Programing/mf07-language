@@ -1,8 +1,21 @@
-# Corplang CLI - Command Reference
+# Corplang — A Linguagem Nativa de Inteligência Autônoma
 
-A modern, production-grade command-line interface para a linguagem Corplang.
+**A inteligência não é um plugin. É o core.**
 
-## Instalação Rápida
+Corplang é uma linguagem de programação que coloca **agentes de IA como primitivas de primeira classe**. Ao invés de integrar IA como uma biblioteca ou middleware, ela é tecida no tecido da execução — capacitando código a tomar decisões autônomas, validar dados através de raciocínio, e orquestrar múltiplos agentes em pipelines de dados e processos.
+
+Construída sobre uma arquitetura de runtime profissional com:
+- **Sistema de Versões Robusto**: Implantação segura e auditável de múltiplas versões
+- **Multi-Driver Persistence**: SQLite, PostgreSQL, e extensível para qualquer backend
+- **Agentes Orquestrados**: Roteamento nativo de múltiplos agentes com estado persistente
+- **Type Safety em Runtime**: Validação de contratos genéricos sem sacrificar flexibilidade
+- **Observabilidade Integrada**: Rastreamento de execução de nós e análise de performance
+
+---
+
+## Comece em 2 Minutos
+
+### Instalação Rápida
 
 ### Linux / macOS
 ```bash
@@ -31,6 +44,53 @@ chmod +x mf
 # Via batch script (Windows)
 mf.bat --help
 ```
+
+## Seu Primeiro Agente (5 min)
+
+A forma mais rápida de entender Corplang é criar um **agente autônomo**:
+
+```bash
+mf init meu_assistente
+cd meu_assistente
+```
+
+Crie `main.mp`:
+
+```mp
+agent Assistente {
+  config: {
+    "provider": "local",      # Usa LLM local (Ollama) ou remoto (OpenAI)
+    "model": "llama2",
+    "temperature": 0.7
+  }
+  
+  fn processar(comando: text) -> text {
+    # O agente não apenas executa — ele "pensa"
+    let resposta = invoke self with comando
+    return resposta
+  }
+}
+
+fn main() {
+  let assistente = new Assistente()
+  
+  # Agentes mantêm contexto entre chamadas
+  println(assistente.processar("Qual é a data de hoje?"))
+  println(assistente.processar("E o dia da semana?"))  # Agente lembra do contexto
+  
+  # Multi-Agent Routing nativo
+  let resultado = route [assistente] with "Resuma em uma linha"
+  println(resultado)
+}
+```
+
+Execute com:
+
+```bash
+mf run main.mp
+```
+
+Para tutoriais completos, veja [Guia de Tutoriais](docs/tutorials/INDEX.md).
 
 ## Comandos Disponíveis
 
@@ -154,7 +214,7 @@ mf build exe
 ```
 
 ### `mf db <command>`
-Operações com banco de dados.
+Operações com banco de dados (suporta SQLite, PostgreSQL e mais).
 
 #### `mf db init [path]`
 Inicializa estrutura de migrações.
@@ -171,6 +231,30 @@ Testa conexão com banco.
 mf db connect sqlite test.db
 mf db connect postgresql postgres://user@localhost/db
 ```
+
+#### `mf db makemigrations`
+Detecta mudanças nos modelos e gera plano de migração.
+
+```bash
+mf db makemigrations
+# Cria: migrations/plan.initial.json (primeira vez)
+#       migrations/plan.incremental.json (atualizações)
+```
+
+#### `mf db migrate`
+Aplica migrações ao banco de dados.
+
+```bash
+mf db migrate
+# Aplica plano de migração ao banco configurado em language_config.yaml
+```
+
+**Drivers Suportados:**
+- `sqlite` - Desenvolvimento e testes (arquivo local)
+- `postgresql`/`postgres` - Produção (alta performance)
+- Extensível para MySQL, SQL Server, etc.
+
+Veja [MULTI_DRIVER_MIGRATIONS.md](docs/MULTI_DRIVER_MIGRATIONS.md) para detalhes.
 
 ### `mf docs <path> [--output <dir>] [--format <type>]`
 Gera documentação do projeto.
@@ -282,6 +366,26 @@ curl -fsSL https://raw.githubusercontent.com/MF07-Language-Programing/mf07-langu
 ```
 
 Para mais detalhes, consulte [docs/UNINSTALL_GUIDE.md](docs/UNINSTALL_GUIDE.md).
+
+## Filosofia & Pilares
+
+### Inteligência Autônoma como Primitiva
+Em Corplang, agentes IA não são "features" — são **cidadãos de primeira classe**. Cada nó na AST é rastreável, cada agente mantém estado entre execuções, e o roteamento de múltiplos agentes é nativo ao runtime.
+
+### Corpo Técnico, Mente Inteligente
+A arquitetura separa dois mundos que normalmente colapsam:
+- **Corpo**: Compilador, drivers de dados, CLI, sistema de versões (tudo determinístico e auditável)
+- **Mente**: Agentes, providers de IA, raciocínio e tomada de decisão (tudo extensível e observável)
+
+### Production-Grade desde o Dia Um
+- **Versionamento auditável** de múltiplas versões simultâneas
+- **Persistência agnóstica a driver**: SQLite para prototipagem, PostgreSQL para escala
+- **Observabilidade integrada**: Rastreie cada decisão do agente
+
+### Type Safety Pragmático
+Validação de contratos genéricos em runtime — segurança onde importa, flexibilidade onde faz sentido.
+
+---
 
 ## Troubleshooting
 

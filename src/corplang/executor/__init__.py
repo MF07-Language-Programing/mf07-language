@@ -114,12 +114,14 @@ def execute(entrypoint: Any, context: Optional[Any] = None) -> Optional[NodeExec
     return executor.execute(entrypoint, ctx)
 
 
-def parse_file(path: str):
+def parse_file(path: str, verbose: bool = False):
     """Parse a .mp file and return the AST root node."""
     with open(path, "r", encoding="utf-8") as f:
         source = f.read()
     lexer = Lexer(source)
     parser = Parser(lexer.tokenize(), path)
+    if verbose:
+        print(parser.as_view())
     return parser.parse()
 
 

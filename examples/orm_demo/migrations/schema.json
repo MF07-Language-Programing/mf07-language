@@ -1,0 +1,153 @@
+{
+  "enums": {
+    "OrderStatus": [
+      [
+        "PENDING",
+        "PENDING"
+      ],
+      [
+        "IN_PROGRESS",
+        "IN_PROGRESS"
+      ],
+      [
+        "FINISHED",
+        "FINISHED"
+      ],
+      [
+        "CANCELED",
+        "CANCELED"
+      ]
+    ]
+  },
+  "models": {
+    "User": {
+      "table": "users",
+      "fields": {
+        "id": {
+          "name": "id",
+          "type": "AutoField",
+          "params": [],
+          "kwargs": {}
+        },
+        "name": {
+          "name": "name",
+          "type": "CharField",
+          "params": [],
+          "kwargs": {
+            "max_length": 100
+          }
+        },
+        "email": {
+          "name": "email",
+          "type": "CharField",
+          "params": [],
+          "kwargs": {
+            "max_length": 255
+          }
+        },
+        "phone": {
+          "name": "phone",
+          "type": "CharField",
+          "params": [],
+          "kwargs": {
+            "max_length": 20,
+            "null": true
+          }
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "DateTimeField",
+          "params": [],
+          "kwargs": {
+            "auto_now_add": true
+          }
+        }
+      }
+    },
+    "Order": {
+      "table": "orders",
+      "fields": {
+        "id": {
+          "name": "id",
+          "type": "AutoField",
+          "params": [],
+          "kwargs": {}
+        },
+        "user": {
+          "name": "user",
+          "type": "ForeignKey",
+          "params": [
+            "User"
+          ],
+          "kwargs": {}
+        },
+        "status": {
+          "name": "status",
+          "type": "EnumField",
+          "params": [
+            "OrderStatus"
+          ],
+          "kwargs": {
+            "default": "OrderStatus.PENDING"
+          }
+        },
+        "total": {
+          "name": "total",
+          "type": "DecimalField",
+          "params": [
+            12,
+            2
+          ],
+          "kwargs": {}
+        },
+        "description": {
+          "name": "description",
+          "type": "TextField",
+          "params": [],
+          "kwargs": {}
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "IntegerField",
+          "params": [],
+          "kwargs": {
+            "default": 1
+          }
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "DateTimeField",
+          "params": [],
+          "kwargs": {
+            "auto_now_add": true
+          }
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "DateTimeField",
+          "params": [],
+          "kwargs": {
+            "auto_now": true
+          }
+        },
+        "is_paid": {
+          "name": "is_paid",
+          "type": "BooleanField",
+          "params": [],
+          "kwargs": {
+            "default": false
+          }
+        }
+      }
+    }
+  },
+  "relations": [
+    {
+      "kind": "fk",
+      "from": "Order",
+      "field": "user",
+      "to": "User",
+      "on_delete": "CASCADE"
+    }
+  ]
+}

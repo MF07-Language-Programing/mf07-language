@@ -65,6 +65,8 @@ def parse_loop_statement(ctx: PositionTracker, parent: Optional[Any] = None) -> 
         adapter = stream.advance().value
         if stream.match(TokenType.USING):
             agent_names = [stream.expect(TokenType.IDENTIFIER).value]
+            while stream.match(TokenType.COMMA):
+                agent_names.append(stream.expect(TokenType.IDENTIFIER).value)
         
         return LoopStatement(
             adapter=adapter, 

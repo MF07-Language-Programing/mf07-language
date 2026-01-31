@@ -50,6 +50,7 @@ class Lexer(LexerSampler):
         "or": TokenType.OR,
         "not": TokenType.NOT,
         "dataset": TokenType.DATASET,
+        "enum": TokenType.ENUM,
         "model": TokenType.MODEL,
         "predict": TokenType.PREDICT,
         "train": TokenType.TRAIN,

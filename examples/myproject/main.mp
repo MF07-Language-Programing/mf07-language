@@ -4,7 +4,7 @@ from examples.myproject.domain.greeter import GreetingProvider, GreeterFactory
 from examples.myproject.services.audit_service import AuditService
 from examples.myproject.utils.math_utils import accumulate, scale_first, describe_sign
 from examples.myproject.utils.text_utils import format_message, build_provider_meta
-
+from core.text import StringHelpers
 
 intent main() {
 	"""Fluxo principal de demonstração."""

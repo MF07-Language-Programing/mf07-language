@@ -15,49 +15,117 @@ from typing import Any, Dict, List, Optional
 from pathlib import Path
 
 
+def serialize_value_for_db(value: Any) -> Any:
+    """Convert Python/enum values to database-compatible format."""
+    from src.corplang.runtime.enums import EnumValue
+    if isinstance(value, EnumValue):
+        return value.value
+    return value
+
+
+def deserialize_value_from_db(value: Any, field_def: Dict[str, Any], model_fields: Dict[str, Any]) -> Any:
+    """Convert database values back to Python/enum objects."""
+    if value is None:
+        return None
+    
+    field_type = field_def.get("type")
+    if field_type == "EnumField":
+        # Try to get enum class from params (first positional arg)
+        params = field_def.get("params", [])
+        if params:
+            enum_name = params[0]
+            # Look up enum in ModelRegistry enums
+            enum_obj = ModelRegistry.get_enum(enum_name)
+            if enum_obj:
+                # Find matching enum member by value
+                for attr_name in dir(enum_obj):
+                    if not attr_name.startswith('_'):
+                        member = getattr(enum_obj, attr_name, None)
+                        from src.corplang.runtime.enums import EnumValue
+                        if isinstance(member, EnumValue) and member.value == value:
+                            return member
+        return value
+    
+    return value
+
+
 class DBConnection:
     def __init__(self):
         self.conn: Any = None
         self.driver: str = ""
+        self.backend: str = ""  # sqlite | psycopg3 | psycopg2
         self.dsn: str = ""
 
     def connect(self, url: str):
-        """Parse URL and open connection: sqlite://path or postgresql://..."""
+        """Parse DB URL and open connection."""
         if url.startswith("sqlite://"):
-            self.driver = "sqlite"
-            self.dsn = url[len("sqlite://"):]
-            self.conn = sqlite3.connect(self.dsn)
-            self.conn.row_factory = sqlite3.Row
-        elif url.startswith("postgresql://") or url.startswith("postgres://"):
-            self.driver = "postgresql"
-            self.dsn = url
-            try:
-                import psycopg2
-                self.conn = psycopg2.connect(url)
-            except ImportError:
-                raise RuntimeError("psycopg2 not installed; cannot use PostgreSQL")
+            self._connect_sqlite(url)
+        elif url.startswith(("postgresql://", "postgres://")):
+            self._connect_postgres(url)
         else:
             raise ValueError(f"Unsupported DB URL: {url}")
+
+    # ---------- Backends ----------
+
+    def _connect_sqlite(self, url: str):
+        self.driver = "sqlite"
+        self.backend = "sqlite"
+        self.dsn = url[len("sqlite://"):]
+        self.conn = sqlite3.connect(self.dsn)
+        self.conn.row_factory = sqlite3.Row
+
+    def _connect_postgres(self, url: str):
+        self.driver = "postgresql"
+        self.dsn = url
+
+        # Prefer psycopg v3
+        try:
+            import psycopg
+            self.conn = psycopg.connect(url)
+            self.backend = "psycopg3"
+            return
+        except ImportError:
+            pass
+
+        # Fallback psycopg2
+        try:
+            import psycopg2
+            self.conn = psycopg2.connect(url)
+            self.backend = "psycopg2"
+            return
+        except ImportError:
+            raise RuntimeError(
+                "PostgreSQL driver missing. Install one of:\n"
+                "  - psycopg[binary] (recommended)\n"
+                "  - psycopg2-binary (legacy fallback)"
+            )
+
+    # ---------- Query API ----------
 
     def execute(self, sql: str, params: Optional[tuple] = None) -> Any:
         if not self.conn:
             raise RuntimeError("Not connected to DB")
+
         cur = self.conn.cursor()
-        if params:
-            cur.execute(sql, params)
-        else:
-            cur.execute(sql)
+        cur.execute(sql, params or ())
         return cur
 
-    def fetchall(self, sql: str, params: Optional[tuple] = None) -> List[Dict[str, Any]]:
+    def fetchall(
+            self, sql: str, params: Optional[tuple] = None
+    ) -> List[Dict[str, Any]]:
         cur = self.execute(sql, params)
         rows = cur.fetchall()
-        if self.driver == "sqlite":
+        if not rows:
+            return []
+
+        if self.backend == "sqlite":
             return [dict(r) for r in rows]
-        else:
-            # psycopg2
-            cols = [d[0] for d in cur.description] if cur.description else []
-            return [dict(zip(cols, row)) for row in rows]
+
+        # psycopg2 / psycopg3
+        cols = [d.name if hasattr(d, "name") else d[0] for d in cur.description]
+        return [dict(zip(cols, row)) for row in rows]
+
+    # ---------- Transaction control ----------
 
     def commit(self):
         if self.conn:
@@ -67,6 +135,7 @@ class DBConnection:
         if self.conn:
             self.conn.close()
             self.conn = None
+            self.backend = ""
 
 
 _connection = DBConnection()
@@ -77,6 +146,42 @@ def connect(url: str):
     _connection.connect(url)
 
 
+def auto_connect_from_config():
+    """Auto-connect to database from language_config.yaml if configured.
+    
+    This is called when 'import db' is executed.
+    Only connects if config exists and connection not already established.
+    """
+    global _connection
+    
+    # Only auto-connect once
+    if _connection.conn is not None:
+        return
+    
+    try:
+        from src.commands.config import CorplangConfig
+        
+        project_root = CorplangConfig.get_project_root()
+        if not project_root:
+            return
+        
+        driver, dsn = CorplangConfig.load_database_config(project_root)
+        
+        # Build URL
+        if driver == "sqlite":
+            url = f"sqlite://{dsn}"
+        elif driver == "postgresql":
+            url = dsn  # Assume full URL for postgresql
+        else:
+            return
+        
+        _connection.connect(url)
+    except Exception:
+        # Silently fail - user can call connect() explicitly if needed
+        pass
+
+
+
 def _get_connection() -> DBConnection:
     return _connection
 
@@ -84,6 +189,7 @@ def _get_connection() -> DBConnection:
 class ModelRegistry:
     """Stores model metadata for runtime ORM."""
     _models: Dict[str, Dict[str, Any]] = {}
+    _enums: Dict[str, Any] = {}
 
     @classmethod
     def register(cls, name: str, table: str, fields: Dict[str, Any]):
@@ -92,6 +198,14 @@ class ModelRegistry:
     @classmethod
     def get(cls, name: str) -> Optional[Dict[str, Any]]:
         return cls._models.get(name)
+    
+    @classmethod
+    def register_enum(cls, name: str, enum_obj: Any):
+        cls._enums[name] = enum_obj
+    
+    @classmethod
+    def get_enum(cls, name: str) -> Optional[Any]:
+        return cls._enums.get(name)
 
 
 class BaseModel:
@@ -105,6 +219,7 @@ class BaseModel:
 
 class QuerySet:
     """Minimal QuerySet for .objects.all() / .filter() / .get() / .count()"""
+
     def __init__(self, model_name: str, table: str, fields: Dict[str, Any], driver: str = "sqlite"):
         self.model_name = model_name
         self.table = table
@@ -126,11 +241,22 @@ class QuerySet:
         if self._where:
             # Use correct placeholder for driver
             placeholder = "?" if self.driver == "sqlite" else "%s"
+            # Serialize enum values in WHERE clause
             clauses = [f"{k} = {placeholder}" for k, _ in self._where]
             sql += " WHERE " + " AND ".join(clauses)
-            params = [v for _, v in self._where]
+            params = [serialize_value_for_db(v) for _, v in self._where]
         rows = conn.fetchall(sql, tuple(params) if params else None)
-        return rows
+        
+        # Deserialize enum values from database
+        deserialized = []
+        for row in rows:
+            new_row = {}
+            for col, val in row.items():
+                field_def = self.fields.get(col, {})
+                new_row[col] = deserialize_value_from_db(val, field_def, self.fields)
+            deserialized.append(new_row)
+        
+        return deserialized
 
     def get(self) -> Dict[str, Any]:
         """Fetch single row. Raise error if 0 or >1 rows match."""
@@ -155,6 +281,7 @@ class QuerySet:
 
 class ModelManager:
     """Model.objects manager."""
+
     def __init__(self, model_name: str):
         meta = ModelRegistry.get(model_name)
         if not meta:
@@ -201,6 +328,7 @@ class ModelManager:
 
 class ModelClass:
     """Represents a Model class in runtime with .create and .objects."""
+
     def __init__(self, name: str):
         self.name = name
         meta = ModelRegistry.get(name)
@@ -214,7 +342,8 @@ class ModelClass:
         """INSERT row and return inserted dict."""
         conn = _get_connection()
         cols = list(kwargs.keys())
-        vals = list(kwargs.values())
+        # Serialize enum values to strings
+        vals = [serialize_value_for_db(v) for v in kwargs.values()]
         # Use correct placeholder for driver
         placeholder = "?" if conn.driver == "sqlite" else "%s"
         placeholders = ", ".join([placeholder for _ in vals])

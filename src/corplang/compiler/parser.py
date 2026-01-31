@@ -155,6 +155,10 @@ class Parser(ParserSampler):
         elif tok.type == TokenType.MODEL:
             self._log_node_creation("ModelDeclaration", tok)
             return constant.parse_model_declaration(self.ctx, parent)
+        elif tok.type == TokenType.ENUM:
+            self._log_node_creation("EnumDeclaration", tok)
+            from src.corplang.compiler.constants.enum_parser import parse_enum_declaration
+            return parse_enum_declaration(self.ctx, parent)
         elif tok.type == TokenType.MIGRATION:
             self._log_node_creation("MigrationDeclaration", tok)
             return constant.parse_migration_declaration(self.ctx, parent)

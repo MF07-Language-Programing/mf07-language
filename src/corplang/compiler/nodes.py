@@ -1083,6 +1083,21 @@ class ModelDeclaration(ASTNode):
 
 
 @dataclass(kw_only=True)
+class EnumDeclaration(ASTNode):
+    """
+    Represents an enum type declaration.
+
+    Attributes:
+        name (str): The name of the enum.
+        members (List[str]): List of enum member names.
+        member_values (Dict[str, str]): Optional explicit values for members.
+    """
+    name: str
+    members: List[str]
+    member_values: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(kw_only=True)
 class MigrationOperation(ASTNode):
     """
     Represents an operation within a database migration.

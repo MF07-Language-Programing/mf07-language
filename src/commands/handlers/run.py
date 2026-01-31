@@ -31,7 +31,7 @@ def run_file(
 
     with Timer(f"Executing {file_path}") as timer:
         try:
-            ast = parse_file(file_path)
+            ast = parse_file(file_path, verbose)
             Output.debug(f"Parsed {len(ast.statements)} statements", verbose)
 
             result = execute(ast)
@@ -59,7 +59,7 @@ def handle_run(args) -> CLIResult:
 
     # Resolve path first to get actual file location
     resolved_path = PathResolver.resolve_relative_path(args.file)
-    
+
     # Then get project root from resolved path
     project_root = CorplangConfig.get_project_root(str(resolved_path))
 

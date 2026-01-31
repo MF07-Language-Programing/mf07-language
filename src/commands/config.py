@@ -119,6 +119,25 @@ class CorplangConfig:
             return yaml.safe_load(f) or {}
 
     @staticmethod
+    def load_database_config(project_root: Optional[Path] = None) -> tuple[str, str]:
+        """Load database configuration from language_config.yaml.
+        
+        Returns:
+            (driver, dsn) tuple. Defaults to ("sqlite", "./app.db") if not configured.
+        """
+        config = CorplangConfig.load_language_config(project_root)
+        db_config = config.get("database", {})
+        
+        driver = str(db_config.get("driver", "sqlite")).strip().lower()
+        dsn = str(db_config.get("dsn", "./app.db")).strip()
+        
+        # Validate driver
+        if driver not in ("sqlite", "postgresql"):
+            driver = "sqlite"
+        
+        return driver, dsn
+
+    @staticmethod
     def is_corplang_file(file_path: str) -> bool:
         """Check if a file is a Corplang source file."""
         return file_path.endswith((".mp", ".mf"))

@@ -40,6 +40,31 @@ class ModelDeclNoOpExecutor(NodeExecutor):
         return None
 
 
+class EnumDeclExecutor(NodeExecutor):
+    def can_execute(self, node: Any) -> bool:
+        return type(node).__name__ == "EnumDeclaration"
+
+    def execute(self, node: Any, context: ExecutionContext) -> Any:
+        from src.corplang.runtime.enums import EnumType, EnumMember
+        
+        name = get_node_attr(node, "name")
+        members = get_node_attr(node, "members", default=[])
+        member_values = get_node_attr(node, "member_values", default={})
+        
+        enum_members = [
+            EnumMember(member, member_values.get(member, member.lower()))
+            for member in members
+        ]
+        enum_obj = EnumType(name, enum_members)
+        context.define_var(name, enum_obj, None)
+        
+        # Register enum in ModelRegistry for ORM
+        from src.corplang.executor.db.runtime import ModelRegistry
+        ModelRegistry.register_enum(name, enum_obj)
+        
+        return enum_obj
+
+
 class ModelOperationNoOpExecutor(NodeExecutor):
     def can_execute(self, node: Any) -> bool:
         return type(node).__name__ == "ModelOperation"
@@ -66,7 +91,10 @@ class AgentDefinitionExecutor(NodeExecutor):
         from src.corplang.runtime.agent_runtime import get_agent_manager
 
         mgr = get_agent_manager()
-        mgr.create_agent(node)
+        # Capture a shallow copy of current environment variables so the agent can
+        # call functions defined in this scope later via call_fn.
+        env_snapshot = dict(context.environment.variables)
+        mgr.create_agent(node, env_snapshot=env_snapshot)
         return None
 
 
@@ -87,7 +115,7 @@ class AgentTrainExecutor(NodeExecutor):
 
                 res = asyncio.run(mgr.train_agent(node))
                 try:
-                    context.interpreter._builtin_print(
+                    print(
                         f"agent train completed: {{'agent': '{node.agent_name}', 'ok': {res}}}"
                     )
                 except Exception:
@@ -99,7 +127,7 @@ class AgentTrainExecutor(NodeExecutor):
 
                     _a.run(mgr.train_agent(node))
                     try:
-                        context.interpreter._builtin_print(
+                        print(
                             f"agent train completed: {{'agent': '{node.agent_name}', 'ok': True}}"
                         )
                     except Exception:
@@ -127,7 +155,7 @@ class AgentEmbedExecutor(NodeExecutor):
         )
         items = getattr(node, "items", None) or []
         res = mgr.embed_agent(agent_name, items)
-        context.interpreter._builtin_print(f"embed result: {res}")
+        print(f"embed result: {res}")
         return res
 
 
@@ -147,10 +175,11 @@ class AgentPredictExecutor(NodeExecutor):
             if isinstance(raw_agent, str)
             else getattr(raw_agent, "name", None) or getattr(raw_agent, "value", None)
         )
-        # Normalized agent_name computed above; avoid printing debug traces here
+
         input_data = getattr(node, "input_data", None)
-        res = mgr.predict_agent(agent_name, input_data)
-        context.interpreter._builtin_print(f"predict result: {res}")
+        # Pass current execution environment so agent can inspect functions and types
+        res = mgr.predict_agent(agent_name, input_data, context_env=context.environment)
+        print("Agent Predict Executor; executed!")
         return res
 
 
@@ -167,7 +196,7 @@ class AgentShutdownExecutor(NodeExecutor):
         # so require agent context to allow shutdown without token (or design auth separately)
         # For now, attempt shutdown with no token; agent ACL can leave allow_tokens empty to permit this.
         ok = mgr.shutdown_agent(agent_name, auth_token=None)
-        context.interpreter._builtin_print(f"shutdown {agent_name}: {ok}")
+        print(f"shutdown {agent_name}: {ok}")
         return ok
 
 
@@ -221,20 +250,97 @@ class LoopExecutor(NodeExecutor):
                     adapter.write("No agent available to handle input.")
                     continue
 
-                resp = mgr.interact(target_agent, routed_input)
-                # Write a simple structured output
-                if isinstance(resp, dict):
-                    # Display structured response clearly
-                    prefix = f"[{target_agent}] " if agent_names and len(agent_names) > 1 else ""
-                    if "text" in resp and len(resp) == 1:
-                        adapter.write(prefix + resp["text"])
-                    else:
-                        # show text plus metadata
-                        txt = resp.get("text", "")
-                        meta = {k: v for k, v in resp.items() if k != "text"}
-                        adapter.write(prefix + (f"{txt} {meta}" if txt else f"{meta}"))
+                # Use predict interface for simple text interactions
+                try:
+                    resp = mgr.predict_agent(target_agent, routed_input, context_env=adapter_context if (adapter_context := getattr(context, 'environment', None)) else None)
+                except Exception as exc:
+                    adapter.write(f"Error interacting with agent '{target_agent}': {exc}")
+                    continue
+
+                # Handle ExecutionResult interactive flows if present
+                try:
+                    from src.corplang.runtime.intelligence import ExecutionResult
+                except Exception:
+                    ExecutionResult = None
+
+                if ExecutionResult and isinstance(resp, ExecutionResult):
+                    current = resp
+                    # Process interactive cycle until final or aborted
+                    while True:
+                        # Check for request_input action
+                        req = None
+                        for a in getattr(current, "actions", []) or []:
+                            if getattr(a, "type", None) == "request_input":
+                                req = a
+                                break
+
+                        if req:
+                            prompt = (req.args or {}).get("prompt") or "Input required:"
+                            adapter.write(prompt)
+                            user_in = adapter.read()
+                            if user_in is None:
+                                adapter.write("Input aborted.")
+                                break
+
+                            try:
+                                current = mgr.predict_agent(target_agent, user_in)
+                            except Exception as exc:
+                                adapter.write(f"Error interacting with agent '{target_agent}': {exc}")
+                                break
+
+                            # If provider returned a legacy dict, print and stop
+                            if not isinstance(current, ExecutionResult):
+                                adapter.write(str(current))
+                                break
+
+                            # Print run outputs if any
+                            runs = current.metadata.get("runs", []) if hasattr(current, "metadata") else []
+                            if runs:
+                                prefix = f"[{target_agent}] " if agent_names and len(agent_names) > 1 else ""
+                                for run in runs:
+                                    out = run.get("stdout", "")
+                                    if out:
+                                        adapter.write(prefix + out)
+                                if current.final:
+                                    if current.output:
+                                        adapter.write(prefix + str(current.output))
+                                    break
+
+                            if current.final:
+                                prefix = f"[{target_agent}] " if agent_names and len(agent_names) > 1 else ""
+                                if current.output:
+                                    adapter.write(prefix + str(current.output))
+                                break
+
+                            continue
+
+                        # No request_input; show run outputs or final output
+                        runs = current.metadata.get("runs", []) if hasattr(current, "metadata") else []
+                        if runs:
+                            prefix = f"[{target_agent}] " if agent_names and len(agent_names) > 1 else ""
+                            for run in runs:
+                                out = run.get("stdout", "")
+                                if out:
+                                    adapter.write(prefix + out)
+                        elif getattr(current, "output", None):
+                            prefix = f"[{target_agent}] " if agent_names and len(agent_names) > 1 else ""
+                            adapter.write(prefix + str(current.output))
+
+                        break
                 else:
-                    adapter.write(str(resp))
+                    # Fallback for legacy dict responses
+                    if isinstance(resp, dict):
+                        # Display structured response clearly
+                        prefix = f"[{target_agent}] " if agent_names and len(agent_names) > 1 else ""
+                        if "text" in resp and len(resp) == 1:
+                            adapter.write(prefix + resp["text"])
+                        else:
+                            # show text plus metadata
+                            txt = resp.get("text", "")
+                            meta = {k: v for k, v in resp.items() if k != "text"}
+                            adapter.write(prefix + (f"{txt} {meta}" if txt else f"{meta}"))
+                    else:
+                        adapter.write(str(resp))
         finally:
             adapter.close()
         return None
@@ -268,20 +374,20 @@ class ServeExecutor(NodeExecutor):
             if getattr(node, "blocking", False):
                 try:
                     if agent_names:
-                        context.interpreter._builtin_print(
+                        print(
                             f"Server '{name}' is running at http://{host}:{port}/ (agents={agent_names})"
                         )
                     else:
-                        context.interpreter._builtin_print(
+                        print(
                             f"Server '{name}' is running at http://{host}:{port}/"
                         )
-                    context.interpreter._builtin_print(
+                    print(
                         f"Press Ctrl+C to stop, or call `stop {name};` from another .mp, or POST /interact/<agent>/shutdown"
                     )
                     handle.wait()
                 except KeyboardInterrupt:
                     # Graceful shutdown on first Ctrl+C
-                    context.interpreter._builtin_print(
+                    print(
                         f"Interrupt received: stopping server '{name}'..."
                     )
                     # Observability trace removed
@@ -289,7 +395,7 @@ class ServeExecutor(NodeExecutor):
                         registry.stop(name)
                     except Exception:
                         pass
-                    context.interpreter._builtin_print(f"Server '{name}' stopped.")
+                    print(f"Server '{name}' stopped.")
                 finally:
                     # Ensure we removed server from registry if still present
                     try:
@@ -312,12 +418,12 @@ class StopExecutor(NodeExecutor):
         if not target:
             return None
         registry = get_server_registry()
-        context.interpreter._builtin_print(f"Stopping server '{target}'...")
+        print(f"Stopping server '{target}'...")
         ok = registry.stop(target)
         if ok:
-            context.interpreter._builtin_print(f"Server '{target}' stopped.")
+            print(f"Server '{target}' stopped.")
         else:
-            context.interpreter._builtin_print(f"Server '{target}' not found.")
+            print(f"Server '{target}' not found.")
         return ok
 
 
@@ -413,6 +519,9 @@ class ImportDeclarationExecutor(NodeExecutor):
         # Hook: auto-load DB models on "import db"
         if module_name == "db":
             self._load_db_models(context)
+            # Auto-connect to database from config if available
+            from src.corplang.executor.db import runtime as db_runtime
+            db_runtime.auto_connect_from_config()
             # db is a builtin, not a module file - get from global_env
             db_obj = context.interpreter.global_env.get("db")
             if db_obj:
@@ -579,6 +688,7 @@ def register(registry: ExecutorRegistry):
     from src.corplang.compiler.nodes import (
         Program,
         ModelDeclaration,
+        EnumDeclaration,
         MigrationDeclaration,
         ModelOperation,
         DatasetOperation,
@@ -601,6 +711,7 @@ def register(registry: ExecutorRegistry):
 
     registry.register(Program, ProgramExecutor())
     registry.register(ModelDeclaration, ModelDeclNoOpExecutor())
+    registry.register(EnumDeclaration, EnumDeclExecutor())
     registry.register(MigrationDeclaration, ModelDeclNoOpExecutor())
     registry.register(ModelOperation, ModelOperationNoOpExecutor())
     registry.register(DatasetOperation, DatasetOperationNoOpExecutor())

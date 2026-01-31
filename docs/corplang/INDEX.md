@@ -2,15 +2,47 @@
 
 Este índice organiza toda a documentação disponível para facilitar sua navegação.
 
+## � Comece Aqui
+
+**Novo em Corplang?** Veja: [Mapa de Documentação](../INDEX.md)
+
+---
+
 ## 📖 Por Categoria
 
-### 🧪 Tutoriais Práticos
-Aprenda criando sistemas úteis do zero.
+### 🧪 Tutoriais Práticos (NOVA ORDEM)
+Aprenda criando sistemas úteis do zero. **Agora focado em IA como core**.
 
-- [Tutorial 1 — CLI To‑Do](../tutorials/01-cli-todo.md)
-- [Tutorial 2 — HTTP JSON API](../tutorials/02-http-json-api.md)
-- [Tutorial 3 — CRUD com SQLite](../tutorials/03-db-crud-sqlite.md)
-- [Tutorial 4 — Agente no Console](../tutorials/04-agent-console.md)
+**Nível 1: Fundamentos**
+- [Tutorial 1 — Seu Primeiro Agente](../tutorials/01-first-agent.md) ⭐ **COMECE AQUI** (25 min)
+
+**Nível 2: Orquestração**
+- [Tutorial 2 — Multi-Agent Routing](../tutorials/02-multi-agent-routing.md) (30 min)
+
+**Nível 3: Dados + IA**
+- [Tutorial 3 — Validação com IA](../tutorials/03-ai-validated-persistence.md) (25 min)
+
+**Nível 4: Full-Stack**
+- [Tutorial 4 — Web App com Agentes](../tutorials/04-web-app-agents.md) (35 min)
+
+**Clássicos (reordenados)**
+- [Tutorial (A) — CLI To‑Do](../tutorials/01-cli-todo.md)
+- [Tutorial (B) — HTTP JSON API](../tutorials/02-http-json-api.md)
+- [Tutorial (C) — CRUD com SQLite](../tutorials/03-db-crud-sqlite.md)
+
+### 📚 Guias de Aprendizado
+
+- [Tutorial Index (Estruturado)](../tutorials/INDEX.md) - Progressão didática
+- [Exemplos da Stdlib](../STDLIB_EXAMPLES.md) - Copy-paste pronto (Collections, Generics, OOP)
+- [Mapa de Documentação](../INDEX.md) - Como navegar tudo
+
+### 🧠 Agentes & Inteligência (CORE)
+
+- [Seu Primeiro Agente](../tutorials/01-first-agent.md) - Começar em 5 min
+- [Multi-Agent Routing](../tutorials/02-multi-agent-routing.md) - Orquestração
+- [Implementar Providers](../guides/intelligence-providers.md) - Ollama, LiteLLM, Custom
+- [Esquemas Gerados por IA](../AI_GENERATED_SCHEMAS.md) - Validação + Persistência
+- [Runtime Architecture](../runtime_architecture.md) - AgentManager, ExecutionManager
 
 ### 🎓 Guia da Linguagem
 Aprenda a programar em Corplang.
@@ -32,6 +64,7 @@ Como o código é executado.
 
 - [Interpreter](./runtime/interpreter.md) - Executor de AST e registry de nós
 - [Exceções](./runtime/exceptions.md) - Sistema de tratamento de erros
+- [Architecture](../runtime_architecture.md) - AgentManager, Observability, Providers
 
 ### 💎 Sistema Core
 Componentes internos da linguagem.
@@ -47,6 +80,7 @@ Componentes internos da linguagem.
 ### 📦 Biblioteca Padrão (Stdlib)
 Módulos prontos para uso.
 
+- [Exemplos Completos](../STDLIB_EXAMPLES.md) ⭐ **COPY-PASTE PRONTO**
 - [Visão Geral](./stdlib/overview.md) - Organização da stdlib
 - [Coleções](./stdlib/collections.md) - List, Map, Set
 - [Sistema e Base](./stdlib/system_base.md) - Env, BigInt
@@ -89,11 +123,27 @@ Sistema de UI para terminal.
 
 - [Terminal UI](./ui/terminal_ui.md) - Animações e estilização CLI
 
+### 📊 Persistência & Banco de Dados
+
+- [Estratégia de Migrações](../MIGRATION_STRATEGY.md) - Sistema sequencial
+- [Exemplos Multi-Driver](../MIGRATION_EXAMPLES.md) - SQLite vs PostgreSQL
+- [Migrações Completas](../MULTI_DRIVER_MIGRATIONS.md) - Referência detalhada
+- [Configuração DB](../DATABASE_CONFIGURATION.md) - Setup drivers
+- [PostgreSQL](../POSTGRESQL_CONFIG.md) - Guia específico
+
+### 📋 Publicação & Deploy
+
+- [Versioning](../VERSION_MANAGEMENT.md) - Sistema de versões
+- [Publishing Guide](../PUBLISHING_GUIDE.md) - Publicar pacotes
+- [Uninstall Guide](../UNINSTALL_GUIDE.md) - Remover seguro
+- [Distribution Fixes](../DISTRIBUTION_FIXES_SUMMARY.md) - Troubleshooting
+
 ---
 
 ## 📑 Por Ordem Alfabética
 
 - [Agentes e IA Nativa](./language_guide/agents_ai.md)
+- [Esquemas Gerados por IA](../AI_GENERATED_SCHEMAS.md)
 - [Assert](./stdlib/core/utils/assert.md)
 - [BigInt](./stdlib/core/base/bigint.md)
 - [Coleções](./stdlib/collections.md)

@@ -3,11 +3,38 @@
   "models": {
     "User": {
       "table": "users",
-      "fields": [
-        "id",
-        "name",
-        "email"
-      ]
+      "fields": {
+        "id": {
+          "name": "id",
+          "type": "AutoField",
+          "params": [],
+          "kwargs": {}
+        },
+        "name": {
+          "name": "name",
+          "type": "CharField",
+          "params": [
+            120
+          ],
+          "kwargs": {}
+        },
+        "whatsapp": {
+          "name": "whatsapp",
+          "type": "CharField",
+          "params": [
+            120
+          ],
+          "kwargs": {}
+        },
+        "email": {
+          "name": "email",
+          "type": "CharField",
+          "params": [
+            120
+          ],
+          "kwargs": {}
+        }
+      }
     }
   },
   "relations": []

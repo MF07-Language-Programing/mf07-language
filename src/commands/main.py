@@ -294,6 +294,9 @@ def create_db_parser(subparsers) -> argparse.ArgumentParser:
     sub.add_parser("makemigrations", help="Generate migrations")
     sub.add_parser("migrate", help="Apply migrations")
 
+    p_reset = sub.add_parser("reset", help="Remove migrations and optionally drop DB objects")
+    p_reset.add_argument("--drop-db", action="store_true", dest="drop_db", help="Also drop all tables/enums from the configured database")
+
     parser.set_defaults(handler=db.handle_db)
     return parser
 

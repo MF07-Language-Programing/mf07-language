@@ -1,0 +1,181 @@
+{
+  "enums": {
+    "InvoiceStatus": [
+      [
+        "DRAFT",
+        "DRAFT"
+      ],
+      [
+        "PENDING",
+        "PENDING"
+      ],
+      [
+        "PAID",
+        "PAID"
+      ],
+      [
+        "CANCELED",
+        "CANCELED"
+      ]
+    ],
+    "UserRole": [
+      [
+        "ADMIN",
+        "ADMIN"
+      ],
+      [
+        "CUSTOMER",
+        "CUSTOMER"
+      ],
+      [
+        "EMPLOYED",
+        "EMPLOYED"
+      ],
+      [
+        "STAFF",
+        "STAFF"
+      ]
+    ]
+  },
+  "models": {
+    "Customer": {
+      "table": "lt_customers",
+      "fields": {
+        "id": {
+          "name": "id",
+          "type": "AutoField",
+          "params": [],
+          "kwargs": {}
+        },
+        "email": {
+          "name": "email",
+          "type": "CharField",
+          "params": [],
+          "kwargs": {
+            "max_length": 255,
+            "unique": true
+          }
+        },
+        "name": {
+          "name": "name",
+          "type": "CharField",
+          "params": [],
+          "kwargs": {
+            "max_length": 999
+          }
+        },
+        "phone": {
+          "name": "phone",
+          "type": "CharField",
+          "params": [],
+          "kwargs": {
+            "max_length": 20,
+            "null": true
+          }
+        },
+        "signup_at": {
+          "name": "signup_at",
+          "type": "DateTimeField",
+          "params": [],
+          "kwargs": {
+            "auto_now_add": true
+          }
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "BooleanField",
+          "params": [],
+          "kwargs": {
+            "default": true
+          }
+        },
+        "role": {
+          "name": "role",
+          "type": "EnumField",
+          "params": [
+            "UserRole"
+          ],
+          "kwargs": {
+            "default": "UserRole.ADMIN"
+          }
+        }
+      }
+    },
+    "Invoice": {
+      "table": "lt_invoices",
+      "fields": {
+        "id": {
+          "name": "id",
+          "type": "AutoField",
+          "params": [],
+          "kwargs": {}
+        },
+        "customer": {
+          "name": "customer",
+          "type": "ForeignKey",
+          "params": [
+            "Customer"
+          ],
+          "kwargs": {}
+        },
+        "total_cents": {
+          "name": "total_cents",
+          "type": "IntegerField",
+          "params": [],
+          "kwargs": {}
+        },
+        "currency": {
+          "name": "currency",
+          "type": "CharField",
+          "params": [],
+          "kwargs": {
+            "max_length": 4
+          }
+        },
+        "discount_cents": {
+          "name": "discount_cents",
+          "type": "IntegerField",
+          "params": [],
+          "kwargs": {
+            "default": 0
+          }
+        },
+        "status": {
+          "name": "status",
+          "type": "EnumField",
+          "params": [
+            "InvoiceStatus"
+          ],
+          "kwargs": {
+            "default": "InvoiceStatus.DRAFT"
+          }
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "DateTimeField",
+          "params": [],
+          "kwargs": {
+            "auto_now_add": true
+          }
+        },
+        "text": {
+          "name": "text",
+          "type": "TextField",
+          "params": [],
+          "kwargs": {
+            "null": true
+          }
+        }
+      }
+    }
+  },
+  "relations": [
+    {
+      "kind": "fk",
+      "from": "Invoice",
+      "field": "customer",
+      "to": "Customer",
+      "on_delete": "CASCADE"
+    }
+  ]
+}

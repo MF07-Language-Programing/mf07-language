@@ -1,0 +1,7 @@
+{
+  "applied": [
+    "001_enum_invoicestatus_enum_userrole.json",
+    "002_drop_role.json",
+    "003_add_role.json"
+  ]
+}

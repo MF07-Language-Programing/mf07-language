@@ -226,6 +226,19 @@ class PropertyAccessExecutor(NodeExecutor):
                 except Exception:
                     raise
             return obj.get_static(prop)
+        
+        # Handle enum types and values
+        from src.corplang.runtime.enums import EnumType, EnumValue
+        if isinstance(obj, EnumType):
+            # Access enum member: UserRole.ADMIN
+            return getattr(obj, prop)
+        if isinstance(obj, EnumValue):
+            # Access enum value properties: .name or .value
+            if prop == "name":
+                return obj.name
+            if prop == "value":
+                return obj.value
+        
         if isinstance(obj, (list, tuple)) and prop == "length":
             return len(obj)
         if isinstance(obj, dict) and prop == "length":

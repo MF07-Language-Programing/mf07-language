@@ -5,7 +5,14 @@ description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
     "pyyaml",
+    "psycopg[binary]>=3.3.2; python_version >= '3.9'",
+    "psycopg2-binary>=2.9.11; python_version < '3.9'",
+    "litellm[proxy]>=1.80.15",
+    "ollama>=0.6.1",
+    "pydantic==2.12.*",
+    "pytest>=9.0.2",
 ]
+
 
 [project.scripts]
 mf = "src.commands.main:main"

@@ -20,12 +20,21 @@ module_paths:
   - ./src
   - ./modules
 
+# Database Configuration (optional)
+database:
+  # Driver: sqlite, postgresql
+  driver: "sqlite"
+  # DSN: database connection string
+  # SQLite: ./mydb.db or :memory:
+  # PostgreSQL: postgresql://user:password@localhost:5432/dbname
+  dsn: "./app.db"
+
 # Compilation settings
 compile:
   # Enable strict type checking
   strict: false
   # Target Python version
-  target: "3.9"
+  target: "3.14"
   # Enable optimization
   optimize: false
   # Enable inline native calls
@@ -93,14 +102,6 @@ mf build
 GITIGNORE = """# Corplang cache
 .corplang-cache/
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-.venv/
-venv/
-
 # IDE
 .vscode/
 .idea/
@@ -131,7 +132,7 @@ def create_project_structure(project_name: str, target_dir: str) -> CLIResult:
         config = DEFAULT_LANGUAGE_CONFIG.replace("", project_name)
         safe_write_file(str(target_path / "language_config.yaml"), config)
 
-        safe_write_file(str(target_path / "main.mp"), DEFAULT_MAIN_MP)
+        safe_write_file(str(target_path / "app.mp"), DEFAULT_MAIN_MP)
 
         safe_write_file(
             str(target_path / "README.md"),
@@ -184,7 +185,7 @@ def handle_init(args) -> CLIResult:
         Output.print()
         Output.info("Next steps:")
         Output.print(f"  cd {target_dir}")
-        Output.print("  mf run main.mp")
+        Output.print("  mf run app.mp")
     else:
         Output.error(result.message)
 

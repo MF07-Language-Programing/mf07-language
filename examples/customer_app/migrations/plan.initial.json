@@ -20,6 +20,14 @@
           "kwargs": {}
         },
         {
+          "name": "whatsapp",
+          "type": "CharField",
+          "params": [
+            120
+          ],
+          "kwargs": {}
+        },
+        {
           "name": "email",
           "type": "CharField",
           "params": [

@@ -1,0 +1,29 @@
+# ORM Demo Configuration
+
+name: "orm_demo"
+description: "ORM demonstration project"
+language_version: "0.1.0"
+
+module_paths:
+  - ./lib
+  - ./src
+  - ./modules
+
+database:
+  driver: "postgresql"
+  dsn: "postgresql://postgres:postgres@localhost:5432/mf_test"
+
+compile:
+  strict: false
+  target: "3.9"
+  optimize: false
+  native_inline: true
+
+runtime:
+  max_recursion: 10000
+  async_enabled: true
+  memory_limit: 0
+
+dev:
+  debug: false
+  ui_enabled: true

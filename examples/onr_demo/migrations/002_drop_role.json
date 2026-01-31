@@ -1,0 +1,10 @@
+{
+  "ops": [
+    {
+      "op": "drop_column",
+      "model": "Customer",
+      "table": "lt_customers",
+      "field_name": "role"
+    }
+  ]
+}

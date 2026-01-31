@@ -83,6 +83,7 @@ class TokenType(Enum):
 
     # Corporate Data / AI
     DATASET = "DATASET"
+    ENUM = "ENUM"
     MODEL = "MODEL"
     PREDICT = "PREDICT"
     TRAIN = "TRAIN"
