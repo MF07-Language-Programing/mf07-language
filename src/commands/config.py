@@ -13,7 +13,7 @@ import yaml
 class CorplangConfig:
     """Configuration with cli-level"""
 
-    VERSION = "1.2.2"
+    VERSION = "1.3.0"
     CACHE_DIR = ".corplang-cache"
     MANIFEST_FILE = "manifest.json"
     CONFIG_FILE = "language_config.yaml"
